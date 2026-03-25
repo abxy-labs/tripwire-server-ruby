@@ -30,7 +30,6 @@ module Tripwire
         cipher.key = derive_key(resolved_secret)
         cipher.iv = nonce
         cipher.auth_tag = tag
-        cipher.auth_data = ""
 
         compressed = cipher.update(ciphertext) + cipher.final
         payload = JSON.parse(Zlib::Inflate.inflate(compressed))
