@@ -1,24 +1,36 @@
-# `tripwire-server`
+# Tripwire Ruby Library
 
-Official Tripwire Ruby server SDK.
+![Preview](https://img.shields.io/badge/status-preview-111827)
+![Ruby 2.6+](https://img.shields.io/badge/ruby-2.6%2B-CC342D?logo=ruby&logoColor=white)
+![License: MIT](https://img.shields.io/badge/license-MIT-0f766e.svg)
 
-`tripwire-server` exposes the customer-facing server APIs for:
+The Tripwire Ruby library provides convenient access to the Tripwire API from applications written in Ruby. It includes a client for Sessions, Fingerprints, Teams, Team API key management, and sealed token verification.
 
-- Sessions API
-- Fingerprints API
-- Teams API
-- Team API key management
-- sealed token verification
+The library also provides:
 
-It does not include collect endpoints or internal scoring APIs.
+- a fast configuration path using `TRIPWIRE_SECRET_KEY`
+- lazy helpers for cursor-based pagination
+- structured API errors and built-in sealed token verification
+
+## Documentation
+
+See the [Tripwire docs](https://tripwire.com/docs) and [API reference](https://tripwire.com/docs/api-reference/introduction).
 
 ## Installation
+
+You don't need this source code unless you want to modify the gem. If you just want to use the package, run:
 
 ```bash
 bundle add tripwire-server
 ```
 
-## Quick start
+## Requirements
+
+- Ruby 2.6+
+
+## Usage
+
+The library needs to be configured with your account's secret key. Set `TRIPWIRE_SECRET_KEY` in your environment or pass `secret_key` directly:
 
 ```ruby
 require "tripwire/server"
@@ -27,19 +39,61 @@ client = Tripwire::Server::Client.new(secret_key: "sk_live_...")
 
 page = client.sessions.list(verdict: "bot", limit: 25)
 session = client.sessions.get("sid_123")
-
-result = Tripwire::Server.safe_verify_tripwire_token("AQAA...", "sk_live_...")
-puts result[:data][:verdict] if result[:ok]
 ```
 
-Defaults:
+### Sealed token verification
 
-- `base_url`: `https://api.tripwirejs.com`
-- `secret_key`: `TRIPWIRE_SECRET_KEY`
-- `timeout`: `30` seconds
+```ruby
+result = Tripwire::Server.safe_verify_tripwire_token(sealed_token, "sk_live_...")
 
-## Development
+if result[:ok]
+  puts "#{result[:data][:verdict]} #{result[:data][:score]}"
+else
+  warn result[:error].message
+end
+```
 
-The canonical cross-language server SDK spec lives in the Tripwire main repo under `sdk-spec/server/`.
-This repo carries a synced copy in `spec/` for standalone testing and release workflows.
-Official Tripwire Ruby server SDK
+### Pagination
+
+```ruby
+client.sessions.iter(search: "signup").each do |session|
+  puts "#{session[:id]} #{session[:latestResult][:verdict]}"
+end
+```
+
+### Fingerprints
+
+```ruby
+fingerprint = client.fingerprints.get("vis_123")
+puts fingerprint[:id]
+```
+
+### Teams
+
+```ruby
+team = client.teams.get("team_123")
+updated = client.teams.update("team_123", name: "New Name")
+
+puts updated[:name]
+```
+
+### Team API keys
+
+```ruby
+created = client.teams.api_keys.create("team_123", name: "Production")
+client.teams.api_keys.revoke("team_123", created[:id])
+```
+
+### Error handling
+
+```ruby
+begin
+  client.sessions.list(limit: 999)
+rescue Tripwire::Server::ApiError => error
+  warn "#{error.status} #{error.code} #{error.message}"
+end
+```
+
+## Support
+
+If you need help integrating Tripwire, start with [tripwire.com/docs](https://tripwire.com/docs).
