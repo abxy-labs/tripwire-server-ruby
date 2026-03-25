@@ -1,0 +1,4 @@
+.bundle/
+*.gem
+pkg/
+vendor/bundle/
