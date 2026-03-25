@@ -1,0 +1,86 @@
+require_relative "test_helper"
+
+class LiveTest < Minitest::Test
+  def test_public_server_surface
+    skip "Set TRIPWIRE_LIVE_SMOKE=1 to run live smoke tests." unless ENV["TRIPWIRE_LIVE_SMOKE"] == "1"
+
+    client = Tripwire::Server::Client.new(
+      secret_key: require_env("TRIPWIRE_SMOKE_SECRET_KEY"),
+      base_url: ENV.fetch("TRIPWIRE_SMOKE_BASE_URL", "https://api.tripwirejs.com")
+    )
+    team_id = require_env("TRIPWIRE_SMOKE_TEAM_ID")
+
+    created_key_id = nil
+    rotated_key_id = nil
+
+    begin
+      sessions = client.sessions.list(limit: 1)
+      refute_empty sessions.items, "Smoke team must have at least one session for the live smoke suite."
+      session = client.sessions.get(sessions.items.first.fetch(:id))
+      assert_equal sessions.items.first.fetch(:id), session.fetch(:id)
+
+      fingerprints = client.fingerprints.list(limit: 1)
+      refute_empty fingerprints.items, "Smoke team must have at least one fingerprint for the live smoke suite."
+      fingerprint = client.fingerprints.get(fingerprints.items.first.fetch(:id))
+      assert_equal fingerprints.items.first.fetch(:id), fingerprint.fetch(:id)
+
+      team = client.teams.get(team_id)
+      updated_team = client.teams.update(team_id, name: team.fetch(:name), status: team.fetch(:status))
+      assert_equal team.fetch(:name), updated_team.fetch(:name)
+      assert_equal team.fetch(:status), updated_team.fetch(:status)
+
+      created_key = client.teams.api_keys.create(
+        team_id,
+        name: "sdk-smoke-#{(Time.now.to_f * 1000).to_i.to_s(16)}",
+        is_test: true
+      )
+      created_key_id = created_key.fetch(:id)
+      assert_operator created_key.fetch(:secretKey), :start_with?, "sk_"
+
+      listed_key = find_api_key(client, team_id, created_key_id)
+      refute_nil listed_key, "Created API key should appear in the paginated list."
+      assert_equal created_key_id, listed_key.fetch(:id)
+
+      rotated_key = client.teams.api_keys.rotate(team_id, created_key_id)
+      rotated_key_id = rotated_key.fetch(:id)
+      assert_operator rotated_key.fetch(:secretKey), :start_with?, "sk_"
+
+      fixture = load_fixture("sealed-token/vector.v1.json")
+      verified = Tripwire::Server.safe_verify_tripwire_token(fixture.fetch(:token), fixture.fetch(:secretKey))
+      assert_equal true, verified.fetch(:ok)
+      assert_equal fixture.fetch(:payload).fetch(:eventId), verified.fetch(:data).fetch(:eventId)
+    ensure
+      best_effort_revoke(client, team_id, rotated_key_id)
+      best_effort_revoke(client, team_id, created_key_id) if created_key_id && created_key_id != rotated_key_id
+    end
+  end
+
+  private
+
+  def require_env(name)
+    ENV.fetch(name)
+  rescue KeyError
+    raise "#{name} is required for the live smoke suite."
+  end
+
+  def find_api_key(client, team_id, key_id)
+    cursor = nil
+
+    loop do
+      page = client.teams.api_keys.list(team_id, limit: 100, cursor: cursor)
+      found = page.items.find { |item| item.fetch(:id) == key_id }
+      return found if found
+      return nil unless page.has_more && page.next_cursor
+
+      cursor = page.next_cursor
+    end
+  end
+
+  def best_effort_revoke(client, team_id, key_id)
+    return unless key_id
+
+    client.teams.api_keys.revoke(team_id, key_id)
+  rescue Tripwire::Server::ApiError => error
+    raise unless error.status == 404 || error.code == "resource.not_found"
+  end
+end
