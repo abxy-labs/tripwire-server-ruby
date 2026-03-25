@@ -133,7 +133,21 @@ jobs:
           ruby-version: "3.3"
           bundler-cache: true
 
-      - uses: rubygems/release-gem@v1
+      - name: Resolve built gem
+        id: gem_artifact
+        run: |
+          shopt -s nullglob
+          files=(artifacts/*.gem)
+          if [ "${#files[@]}" -ne 1 ]; then
+            echo "Expected exactly one built gem in artifacts/, found ${#files[@]}."
+            exit 1
+          fi
+          echo "path=./${files[0]}" >> "$GITHUB_OUTPUT"
+
+      - uses: rubygems/configure-rubygems-credentials@v1.0.0
+
+      - name: Publish gem
+        run: gem push "${{ steps.gem_artifact.outputs.path }}"
 
       - name: Create GitHub release
         env:
