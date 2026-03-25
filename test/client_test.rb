@@ -72,8 +72,8 @@ class ClientTest < Minitest::Test
           second_page = {
             data: [
               session_list[:data].first.merge(
-                id: "sid_example_two",
-                latestEventId: "evt_example_two",
+                id: "sid_123456789abcdefghjkmnpqrst",
+                latestEventId: "evt_3456789abcdefghjkmnpqrstvw",
                 lastScoredAt: "2026-03-24T20:01:05.000Z"
               )
             ],
@@ -83,25 +83,25 @@ class ClientTest < Minitest::Test
             }
           }
           [200, {}, JSON.dump(second_page)]
-        when ["GET", "https://api.tripwirejs.com/v1/sessions/sid_example_one"]
+        when ["GET", "https://api.tripwirejs.com/v1/sessions/sid_0123456789abcdefghjkmnpqrs"]
           [200, {}, JSON.dump(session_detail)]
         when ["GET", "https://api.tripwirejs.com/v1/fingerprints"]
           [200, {}, JSON.dump(fingerprint_list)]
-        when ["GET", "https://api.tripwirejs.com/v1/fingerprints/vis_example_one"]
+        when ["GET", "https://api.tripwirejs.com/v1/fingerprints/vid_456789abcdefghjkmnpqrstvwx"]
           [200, {}, JSON.dump(fingerprint_detail)]
         when ["POST", "https://api.tripwirejs.com/v1/teams"]
           [201, {}, JSON.dump(team_create)]
-        when ["GET", "https://api.tripwirejs.com/v1/teams/team_example"]
+        when ["GET", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy"]
           [200, {}, JSON.dump(team_get)]
-        when ["PATCH", "https://api.tripwirejs.com/v1/teams/team_example"]
+        when ["PATCH", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy"]
           [200, {}, JSON.dump(team_update)]
-        when ["POST", "https://api.tripwirejs.com/v1/teams/team_example/api-keys"]
+        when ["POST", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys"]
           [201, {}, JSON.dump(api_key_create)]
-        when ["GET", "https://api.tripwirejs.com/v1/teams/team_example/api-keys"]
+        when ["GET", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys"]
           [200, {}, JSON.dump(api_key_list)]
-        when ["DELETE", "https://api.tripwirejs.com/v1/teams/team_example/api-keys/key_example"]
+        when ["DELETE", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz"]
           [204, {}, ""]
-        when ["POST", "https://api.tripwirejs.com/v1/teams/team_example/api-keys/key_example/rotations"]
+        when ["POST", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz/rotations"]
           [201, {}, JSON.dump(api_key_rotate)]
         else
           flunk("Unexpected request #{request[:method]} #{request[:url]}")
@@ -109,16 +109,16 @@ class ClientTest < Minitest::Test
       end
     )
 
-    assert_equal "sid_example_one", client.sessions.get("sid_example_one")[:id]
-    assert_equal ["sid_example_one", "sid_example_two"], client.sessions.iter.map { |item| item[:id] }
-    assert_equal "vis_example_one", client.fingerprints.get("vis_example_one")[:id]
-    assert_equal "team_example", client.teams.get("team_example")[:id]
-    assert_equal "team_example", client.teams.create(name: "Example Team", slug: "example-team")[:id]
-    assert_equal "Updated Example Team", client.teams.update("team_example", name: "Updated Example Team")[:name]
-    assert_equal "sk_live_example", client.teams.api_keys.create("team_example", name: "Production")[:secretKey]
-    assert_equal "key_example", client.teams.api_keys.list("team_example").items.first[:id]
-    assert_nil client.teams.api_keys.revoke("team_example", "key_example")
-    assert_equal "sk_live_rotated", client.teams.api_keys.rotate("team_example", "key_example")[:secretKey]
+    assert_equal "sid_0123456789abcdefghjkmnpqrs", client.sessions.get("sid_0123456789abcdefghjkmnpqrs")[:id]
+    assert_equal ["sid_0123456789abcdefghjkmnpqrs", "sid_123456789abcdefghjkmnpqrst"], client.sessions.iter.map { |item| item[:id] }
+    assert_equal "vid_456789abcdefghjkmnpqrstvwx", client.fingerprints.get("vid_456789abcdefghjkmnpqrstvwx")[:id]
+    assert_equal "team_56789abcdefghjkmnpqrstvwxy", client.teams.get("team_56789abcdefghjkmnpqrstvwxy")[:id]
+    assert_equal "team_56789abcdefghjkmnpqrstvwxy", client.teams.create(name: "Example Team", slug: "example-team")[:id]
+    assert_equal "Updated Example Team", client.teams.update("team_56789abcdefghjkmnpqrstvwxy", name: "Updated Example Team")[:name]
+    assert_equal "sk_live_example", client.teams.api_keys.create("team_56789abcdefghjkmnpqrstvwxy", name: "Production")[:secretKey]
+    assert_equal "key_6789abcdefghjkmnpqrstvwxyz", client.teams.api_keys.list("team_56789abcdefghjkmnpqrstvwxy").items.first[:id]
+    assert_nil client.teams.api_keys.revoke("team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")
+    assert_equal "sk_live_rotated", client.teams.api_keys.rotate("team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")[:secretKey]
   end
 
   def test_api_errors_are_parsed

@@ -81,6 +81,6 @@ class LiveTest < Minitest::Test
 
     client.teams.api_keys.revoke(team_id, key_id)
   rescue Tripwire::Server::ApiError => error
-    raise unless error.status == 404 || error.code == "resource.not_found"
+    raise unless error.status == 404 || error.code == "request.not_found"
   end
 end
