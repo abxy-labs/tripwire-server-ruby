@@ -54,9 +54,9 @@ module Tripwire
               status: status,
               code: error[:code] || "request.failed",
               message: error[:message] || response_body.to_s,
-              request_id: request_id || error[:requestId],
-              field_errors: details[:fieldErrors] || [],
-              docs_url: error[:docsUrl],
+              request_id: request_id || error[:request_id],
+              field_errors: details[:fields] || [],
+              docs_url: error[:docs_url],
               body: payload
             )
           end
@@ -138,8 +138,8 @@ module Tripwire
         ListResult.new(
           items: payload[:data],
           limit: payload.fetch(:pagination).fetch(:limit),
-          has_more: payload.fetch(:pagination).fetch(:hasMore),
-          next_cursor: payload.fetch(:pagination)[:nextCursor]
+          has_more: payload.fetch(:pagination).fetch(:has_more),
+          next_cursor: payload.fetch(:pagination)[:next_cursor]
         )
       end
     end
@@ -203,12 +203,12 @@ module Tripwire
     end
 
     class ApiKeysResource < BaseResource
-      def create(team_id, name: nil, is_test: nil, allowed_origins: nil, rate_limit: nil)
+      def create(team_id, name: nil, environment: nil, allowed_origins: nil, rate_limit: nil)
         payload = @client.request_json("POST", "/v1/teams/#{CGI.escape(team_id)}/api-keys", body: compact({
           name: name,
-          isTest: is_test,
-          allowedOrigins: allowed_origins,
-          rateLimit: rate_limit
+          environment: environment,
+          allowed_origins: allowed_origins,
+          rate_limit: rate_limit
         }))
         payload[:data]
       end
@@ -222,8 +222,7 @@ module Tripwire
       end
 
       def revoke(team_id, key_id)
-        @client.request_json("DELETE", "/v1/teams/#{CGI.escape(team_id)}/api-keys/#{CGI.escape(key_id)}", expect_content: false)
-        nil
+        @client.request_json("DELETE", "/v1/teams/#{CGI.escape(team_id)}/api-keys/#{CGI.escape(key_id)}")[:data]
       end
 
       def rotate(team_id, key_id)

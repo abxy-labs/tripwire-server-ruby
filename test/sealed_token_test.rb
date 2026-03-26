@@ -5,15 +5,15 @@ class SealedTokenTest < Minitest::Test
     fixture = load_fixture("sealed-token/vector.v1.json")
     verified = Tripwire::Server.verify_tripwire_token(fixture.fetch(:token), fixture.fetch(:secretKey))
 
-    assert_equal fixture.fetch(:payload).fetch(:eventId), verified.fetch(:eventId)
-    assert_equal fixture.fetch(:payload).fetch(:sessionId), verified.fetch(:sessionId)
+    assert_equal fixture.fetch(:payload).fetch(:session_id), verified.fetch(:session_id)
+    assert_equal fixture.fetch(:payload).fetch(:decision).fetch(:event_id), verified.fetch(:decision).fetch(:event_id)
   end
 
   def test_verify_tripwire_token_with_secret_hash
     fixture = load_fixture("sealed-token/vector.v1.json")
     verified = Tripwire::Server.verify_tripwire_token(fixture.fetch(:token), fixture.fetch(:secretHash))
 
-    assert_equal fixture.fetch(:payload).fetch(:score), verified.fetch(:score)
+    assert_equal fixture.fetch(:payload).fetch(:decision).fetch(:risk_score), verified.fetch(:decision).fetch(:risk_score)
   end
 
   def test_safe_verify_tripwire_token_invalid_fixture

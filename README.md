@@ -4,7 +4,7 @@
 ![Ruby 2.6+](https://img.shields.io/badge/ruby-2.6%2B-CC342D?logo=ruby&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-0f766e.svg)
 
-The Tripwire Ruby library provides convenient access to the Tripwire API from applications written in Ruby. It includes a client for Sessions, Fingerprints, Teams, Team API key management, and sealed token verification.
+The Tripwire Ruby library provides convenient access to the Tripwire API from applications written in Ruby. It includes a client for Sessions, visitor fingerprints, Teams, Team API key management, and sealed token verification.
 
 The library also provides:
 
@@ -38,7 +38,9 @@ require "tripwire/server"
 client = Tripwire::Server::Client.new(secret_key: "sk_live_...")
 
 page = client.sessions.list(verdict: "bot", limit: 25)
-session = client.sessions.get("sid_123")
+session = client.sessions.get("sid_0123456789abcdefghjkmnpqrs")
+
+puts "#{session[:decision][:automation_status]} #{session[:highlights].first&.fetch(:summary, nil)}"
 ```
 
 ### Sealed token verification
@@ -47,7 +49,7 @@ session = client.sessions.get("sid_123")
 result = Tripwire::Server.safe_verify_tripwire_token(sealed_token, "sk_live_...")
 
 if result[:ok]
-  puts "#{result[:data][:verdict]} #{result[:data][:score]}"
+  puts "#{result[:data][:decision][:verdict]} #{result[:data][:decision][:risk_score]}"
 else
   warn result[:error].message
 end
@@ -57,22 +59,22 @@ end
 
 ```ruby
 client.sessions.iter(search: "signup").each do |session|
-  puts "#{session[:id]} #{session[:latestResult][:verdict]}"
+  puts "#{session[:id]} #{session[:latest_decision][:verdict]}"
 end
 ```
 
-### Fingerprints
+### Visitor fingerprints
 
 ```ruby
-fingerprint = client.fingerprints.get("vis_123")
+fingerprint = client.fingerprints.get("vid_0123456789abcdefghjkmnpqrs")
 puts fingerprint[:id]
 ```
 
 ### Teams
 
 ```ruby
-team = client.teams.get("team_123")
-updated = client.teams.update("team_123", name: "New Name")
+team = client.teams.get("team_0123456789abcdefghjkmnpqrs")
+updated = client.teams.update("team_0123456789abcdefghjkmnpqrs", name: "New Name")
 
 puts updated[:name]
 ```
@@ -80,8 +82,8 @@ puts updated[:name]
 ### Team API keys
 
 ```ruby
-created = client.teams.api_keys.create("team_123", name: "Production")
-client.teams.api_keys.revoke("team_123", created[:id])
+created = client.teams.api_keys.create("team_0123456789abcdefghjkmnpqrs", name: "Production", environment: "live")
+client.teams.api_keys.revoke("team_0123456789abcdefghjkmnpqrs", created[:id])
 ```
 
 ### Error handling
