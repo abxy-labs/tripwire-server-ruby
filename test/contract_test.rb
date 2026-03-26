@@ -23,17 +23,17 @@ class ContractTest < Minitest::Test
 
   def test_expected_success_fixtures_exist
     paths = [
-      "public-api/sessions/list.json",
-      "public-api/sessions/detail.json",
-      "public-api/fingerprints/list.json",
-      "public-api/fingerprints/detail.json",
-      "public-api/teams/team.json",
-      "public-api/teams/team-create.json",
-      "public-api/teams/team-update.json",
-      "public-api/teams/api-key-create.json",
-      "public-api/teams/api-key-list.json",
-      "public-api/teams/api-key-rotate.json",
-      "public-api/teams/api-key-revoke.json"
+      "api/sessions/list.json",
+      "api/sessions/detail.json",
+      "api/fingerprints/list.json",
+      "api/fingerprints/detail.json",
+      "api/teams/team.json",
+      "api/teams/team-create.json",
+      "api/teams/team-update.json",
+      "api/teams/api-key-create.json",
+      "api/teams/api-key-list.json",
+      "api/teams/api-key-rotate.json",
+      "api/teams/api-key-revoke.json"
     ]
 
     paths.each do |relative_path|
@@ -55,8 +55,27 @@ class ContractTest < Minitest::Test
     assert_equal "#/components/schemas/KnownPublicErrorCode", schemas.fetch("PublicError").fetch("properties").fetch("code").fetch("x-tripwire-known-values-ref")
     assert_equal ["active", "suspended", "deleted"], schemas.fetch("TeamStatus").fetch("enum")
     assert_equal ["active", "revoked", "rotated"], schemas.fetch("ApiKeyStatus").fetch("enum")
-    assert_includes schemas.fetch("SessionDetail").fetch("required"), "ipIntel"
-    %w[allowedOrigins rateLimit rotatedAt revokedAt].each do |field|
+    %w[decision highlights automation web_bot_auth network runtime_integrity visitor_fingerprint connection_fingerprint previous_decisions request browser device analysis_coverage signals_fired client_telemetry].each do |field|
+      assert_includes schemas.fetch("SessionDetail").fetch("required"), field
+    end
+    assert_equal(
+      { "$ref" => "#/components/schemas/SessionDetailRequest" },
+      schemas.fetch("SessionDetail").fetch("properties").fetch("request")
+    )
+    assert_equal(
+      { "$ref" => "#/components/schemas/SessionClientTelemetry" },
+      schemas.fetch("SessionDetail").fetch("properties").fetch("client_telemetry")
+    )
+    assert_equal(
+      { "anyOf" => [{ "$ref" => "#/components/schemas/SessionAutomation" }, { "type" => "null" }] },
+      schemas.fetch("SessionDetail").fetch("properties").fetch("automation")
+    )
+    assert_equal(
+      { "type" => "array", "items" => { "$ref" => "#/components/schemas/SessionSignalFired" } },
+      schemas.fetch("SessionDetail").fetch("properties").fetch("signals_fired")
+    )
+    assert_equal "string", schemas.fetch("SessionSignalFired").fetch("properties").fetch("signal").fetch("type")
+    %w[allowed_origins rate_limit rotated_at revoked_at].each do |field|
       assert_includes schemas.fetch("ApiKey").fetch("required"), field
     end
     refute_includes schemas.keys, "CollectBatchResponse"
@@ -65,8 +84,8 @@ class ContractTest < Minitest::Test
   def test_public_operations_have_stable_ids_and_tags
     assert_equal "listSessions", spec.fetch("paths").fetch("/v1/sessions").fetch("get").fetch("operationId")
     assert_equal ["Sessions"], spec.fetch("paths").fetch("/v1/sessions").fetch("get").fetch("tags")
-    assert_equal "getFingerprint", spec.fetch("paths").fetch("/v1/fingerprints/{visitorId}").fetch("get").fetch("operationId")
-    assert_equal ["Fingerprints"], spec.fetch("paths").fetch("/v1/fingerprints/{visitorId}").fetch("get").fetch("tags")
+    assert_equal "getVisitorFingerprint", spec.fetch("paths").fetch("/v1/fingerprints/{visitorId}").fetch("get").fetch("operationId")
+    assert_equal ["Visitor fingerprints"], spec.fetch("paths").fetch("/v1/fingerprints/{visitorId}").fetch("get").fetch("tags")
     assert_equal "updateTeam", spec.fetch("paths").fetch("/v1/teams/{teamId}").fetch("patch").fetch("operationId")
     assert_equal ["Teams"], spec.fetch("paths").fetch("/v1/teams/{teamId}").fetch("patch").fetch("tags")
     assert_equal "rotateTeamApiKey", spec.fetch("paths").fetch("/v1/teams/{teamId}/api-keys/{keyId}/rotations").fetch("post").fetch("operationId")

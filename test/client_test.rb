@@ -4,7 +4,7 @@ class ClientTest < Minitest::Test
   def test_env_secret_fallback
     original = ENV["TRIPWIRE_SECRET_KEY"]
     ENV["TRIPWIRE_SECRET_KEY"] = "sk_env_default"
-    fixture = load_fixture("public-api/sessions/list.json")
+    fixture = load_fixture("api/sessions/list.json")
 
     client = Tripwire::Server::Client.new(
       base_url: "https://example.tripwire.dev",
@@ -28,7 +28,7 @@ class ClientTest < Minitest::Test
   end
 
   def test_base_url_timeout_and_headers_are_applied
-    fixture = load_fixture("public-api/sessions/list.json")
+    fixture = load_fixture("api/sessions/list.json")
     observed = nil
 
     client = Tripwire::Server::Client.new(
@@ -51,16 +51,16 @@ class ClientTest < Minitest::Test
   end
 
   def test_sessions_fingerprints_teams_and_api_keys
-    session_list = load_fixture("public-api/sessions/list.json")
-    session_detail = load_fixture("public-api/sessions/detail.json")
-    fingerprint_list = load_fixture("public-api/fingerprints/list.json")
-    fingerprint_detail = load_fixture("public-api/fingerprints/detail.json")
-    team_get = load_fixture("public-api/teams/team.json")
-    team_create = load_fixture("public-api/teams/team-create.json")
-    team_update = load_fixture("public-api/teams/team-update.json")
-    api_key_create = load_fixture("public-api/teams/api-key-create.json")
-    api_key_list = load_fixture("public-api/teams/api-key-list.json")
-    api_key_rotate = load_fixture("public-api/teams/api-key-rotate.json")
+    session_list = load_fixture("api/sessions/list.json")
+    session_detail = load_fixture("api/sessions/detail.json")
+    fingerprint_list = load_fixture("api/fingerprints/list.json")
+    fingerprint_detail = load_fixture("api/fingerprints/detail.json")
+    team_get = load_fixture("api/teams/team.json")
+    team_create = load_fixture("api/teams/team-create.json")
+    team_update = load_fixture("api/teams/team-update.json")
+    api_key_create = load_fixture("api/teams/api-key-create.json")
+    api_key_list = load_fixture("api/teams/api-key-list.json")
+    api_key_rotate = load_fixture("api/teams/api-key-rotate.json")
 
     client = Tripwire::Server::Client.new(
       secret_key: "sk_live_test",
@@ -73,13 +73,18 @@ class ClientTest < Minitest::Test
             data: [
               session_list[:data].first.merge(
                 id: "sid_123456789abcdefghjkmnpqrst",
-                latestEventId: "evt_3456789abcdefghjkmnpqrstvw",
-                lastScoredAt: "2026-03-24T20:01:05.000Z"
+                latest_decision: session_list[:data].first.fetch(:latest_decision).merge(
+                  event_id: "evt_3456789abcdefghjkmnpqrstvw",
+                  evaluated_at: "2026-03-24T20:01:05.000Z"
+                )
               )
             ],
             pagination: {
               limit: 50,
-              hasMore: false
+              has_more: false
+            },
+            meta: {
+              request_id: "req_0123456789abcdef0123456789abcdef"
             }
           }
           [200, {}, JSON.dump(second_page)]
@@ -100,7 +105,7 @@ class ClientTest < Minitest::Test
         when ["GET", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys"]
           [200, {}, JSON.dump(api_key_list)]
         when ["DELETE", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz"]
-          [204, {}, ""]
+          [200, {}, JSON.dump(load_fixture("api/teams/api-key-revoke.json"))]
         when ["POST", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz/rotations"]
           [201, {}, JSON.dump(api_key_rotate)]
         else
@@ -114,11 +119,11 @@ class ClientTest < Minitest::Test
     assert_equal "vid_456789abcdefghjkmnpqrstvwx", client.fingerprints.get("vid_456789abcdefghjkmnpqrstvwx")[:id]
     assert_equal "team_56789abcdefghjkmnpqrstvwxy", client.teams.get("team_56789abcdefghjkmnpqrstvwxy")[:id]
     assert_equal "team_56789abcdefghjkmnpqrstvwxy", client.teams.create(name: "Example Team", slug: "example-team")[:id]
-    assert_equal "Updated Example Team", client.teams.update("team_56789abcdefghjkmnpqrstvwxy", name: "Updated Example Team")[:name]
-    assert_equal "sk_live_example", client.teams.api_keys.create("team_56789abcdefghjkmnpqrstvwxy", name: "Production")[:secretKey]
+    assert_equal "Example Team", client.teams.update("team_56789abcdefghjkmnpqrstvwxy", name: "Updated Example Team")[:name]
+    assert_equal "sk_live_example", client.teams.api_keys.create("team_56789abcdefghjkmnpqrstvwxy", name: "Production")[:secret_key]
     assert_equal "key_6789abcdefghjkmnpqrstvwxyz", client.teams.api_keys.list("team_56789abcdefghjkmnpqrstvwxy").items.first[:id]
-    assert_nil client.teams.api_keys.revoke("team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")
-    assert_equal "sk_live_rotated", client.teams.api_keys.rotate("team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")[:secretKey]
+    assert_equal "key_6789abcdefghjkmnpqrstvwxyz", client.teams.api_keys.revoke("team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")[:id]
+    assert_equal "sk_live_rotated", client.teams.api_keys.rotate("team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")[:secret_key]
   end
 
   def test_api_errors_are_parsed
@@ -132,7 +137,7 @@ class ClientTest < Minitest::Test
       client = Tripwire::Server::Client.new(
         secret_key: "sk_live_test",
         transport: lambda do |_request|
-          [fixture.fetch(:error).fetch(:status), { "x-request-id" => fixture.fetch(:error).fetch(:requestId) }, JSON.dump(fixture)]
+          [fixture.fetch(:error).fetch(:status), { "x-request-id" => fixture.fetch(:error).fetch(:request_id) }, JSON.dump(fixture)]
         end
       )
 
@@ -140,7 +145,7 @@ class ClientTest < Minitest::Test
         client.sessions.list(limit: 999)
       end
       assert_equal fixture.fetch(:error).fetch(:code), error.code
-      assert_equal fixture.fetch(:error).fetch(:requestId), error.request_id
+      assert_equal fixture.fetch(:error).fetch(:request_id), error.request_id
     end
   end
 end

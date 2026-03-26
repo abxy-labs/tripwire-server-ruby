@@ -32,10 +32,10 @@ class LiveTest < Minitest::Test
       created_key = client.teams.api_keys.create(
         team_id,
         name: "sdk-smoke-#{(Time.now.to_f * 1000).to_i.to_s(16)}",
-        is_test: true
+        environment: "test"
       )
       created_key_id = created_key.fetch(:id)
-      assert_operator created_key.fetch(:secretKey), :start_with?, "sk_"
+      assert_operator created_key.fetch(:secret_key), :start_with?, "sk_"
 
       listed_key = find_api_key(client, team_id, created_key_id)
       refute_nil listed_key, "Created API key should appear in the paginated list."
@@ -43,12 +43,13 @@ class LiveTest < Minitest::Test
 
       rotated_key = client.teams.api_keys.rotate(team_id, created_key_id)
       rotated_key_id = rotated_key.fetch(:id)
-      assert_operator rotated_key.fetch(:secretKey), :start_with?, "sk_"
+      assert_operator rotated_key.fetch(:secret_key), :start_with?, "sk_"
 
       fixture = load_fixture("sealed-token/vector.v1.json")
       verified = Tripwire::Server.safe_verify_tripwire_token(fixture.fetch(:token), fixture.fetch(:secretKey))
       assert_equal true, verified.fetch(:ok)
-      assert_equal fixture.fetch(:payload).fetch(:eventId), verified.fetch(:data).fetch(:eventId)
+      assert_equal fixture.fetch(:payload).fetch(:session_id), verified.fetch(:data).fetch(:session_id)
+      assert_equal fixture.fetch(:payload).fetch(:decision).fetch(:event_id), verified.fetch(:data).fetch(:decision).fetch(:event_id)
     ensure
       best_effort_revoke(client, team_id, rotated_key_id)
       best_effort_revoke(client, team_id, created_key_id) if created_key_id && created_key_id != rotated_key_id
