@@ -1,7 +1,7 @@
 # Tripwire Ruby Library
 
 ![Preview](https://img.shields.io/badge/status-preview-111827)
-![Ruby 2.6+](https://img.shields.io/badge/ruby-2.6%2B-CC342D?logo=ruby&logoColor=white)
+![Ruby 3.3+](https://img.shields.io/badge/ruby-3.3%2B-CC342D?logo=ruby&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-0f766e.svg)
 
 The Tripwire Ruby library provides convenient access to the Tripwire API from applications written in Ruby. It includes a client for Sessions, visitor fingerprints, Teams, Team API key management, sealed token verification, Gate, and Gate delivery/webhook helpers.
@@ -28,7 +28,7 @@ bundle add tripwire-server
 
 ## Requirements
 
-- Ruby 2.6+
+- Ruby 3.3+
 
 ## Usage
 

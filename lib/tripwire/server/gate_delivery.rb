@@ -75,6 +75,7 @@ module Tripwire
       end
 
       def create_delivery_key_pair
+        CryptoSupport.ensure_supported_runtime!
         private_key = OpenSSL::PKey.generate_key("X25519")
         raw_public_key = raw_x25519_public_key_from_key_object(private_key.public_key)
         {
@@ -89,10 +90,12 @@ module Tripwire
       end
 
       def export_delivery_private_key_pkcs8(private_key)
+        CryptoSupport.ensure_supported_runtime!
         Base64.urlsafe_encode64(private_key.private_to_der, padding: false)
       end
 
       def import_delivery_private_key_pkcs8(value)
+        CryptoSupport.ensure_supported_runtime!
         OpenSSL::PKey.read(b64url_decode(value, "delivery.private_key_pkcs8"))
       end
 
@@ -147,6 +150,7 @@ module Tripwire
       end
 
       def encrypt_gate_delivery_payload(delivery, payload)
+        CryptoSupport.ensure_supported_runtime!
         validated_delivery = validate_gate_delivery_request(delivery)
         payload = symbolize(payload)
         raise ArgumentError, "Gate delivery payload version must be 1" unless payload[:version] == GATE_DELIVERY_VERSION
@@ -178,6 +182,7 @@ module Tripwire
       end
 
       def decrypt_gate_delivery_envelope(private_key, envelope)
+        CryptoSupport.ensure_supported_runtime!
         validated = validate_encrypted_gate_delivery_envelope(envelope)
         shared_secret = private_key.derive(
           OpenSSL::PKey.read(X25519_SPKI_PREFIX + b64url_decode(validated[:ephemeral_public_key], "encrypted_delivery.ephemeral_public_key"))

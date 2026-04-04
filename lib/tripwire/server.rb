@@ -1,5 +1,6 @@
 require_relative "server/version"
 require_relative "server/errors"
+require_relative "server/crypto_support"
 require_relative "server/types"
 require_relative "server/sealed_token"
 require_relative "server/gate_delivery"

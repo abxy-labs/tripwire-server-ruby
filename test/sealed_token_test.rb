@@ -1,6 +1,10 @@
 require_relative "test_helper"
 
 class SealedTokenTest < Minitest::Test
+  def setup
+    require_gate_crypto_support!
+  end
+
   def test_verify_tripwire_token_with_plaintext_secret
     fixture = load_fixture("sealed-token/vector.v1.json")
     verified = Tripwire::Server.verify_tripwire_token(fixture.fetch(:token), fixture.fetch(:secretKey))

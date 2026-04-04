@@ -1,6 +1,10 @@
 require_relative "test_helper"
 
 class GateDeliveryTest < Minitest::Test
+  def setup
+    require_gate_crypto_support!
+  end
+
   def load_fixture(relative_path)
     JSON.parse(File.read(File.join(__dir__, "..", "spec", "fixtures", relative_path)))
   end
