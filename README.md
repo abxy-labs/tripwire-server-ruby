@@ -4,14 +4,15 @@
 ![Ruby 2.6+](https://img.shields.io/badge/ruby-2.6%2B-CC342D?logo=ruby&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-0f766e.svg)
 
-The Tripwire Ruby library provides convenient access to the Tripwire API from applications written in Ruby. It includes a client for Sessions, visitor fingerprints, Teams, Gate, Team API key management, sealed token verification, and Gate delivery/webhook helpers.
+The Tripwire Ruby library provides convenient access to the Tripwire API from applications written in Ruby. It includes a client for Sessions, visitor fingerprints, Teams, Team API key management, sealed token verification, Gate, and Gate delivery/webhook helpers.
 
 The library also provides:
 
 - a fast configuration path using `TRIPWIRE_SECRET_KEY`
-- public, bearer-token, and secret-key auth modes for Gate flows
 - lazy helpers for cursor-based pagination
-- structured API errors, built-in sealed token verification, and Gate delivery/webhook helpers
+- structured API errors and built-in sealed token verification
+- public, bearer-token, and secret-key auth modes for Gate flows
+- Gate delivery/webhook helpers
 
 ## Documentation
 
@@ -31,7 +32,7 @@ bundle add tripwire-server
 
 ## Usage
 
-The client can be created without a secret key for public or bearer-auth Gate flows. Secret-auth routes use `TRIPWIRE_SECRET_KEY` or `secret_key:`:
+Use `TRIPWIRE_SECRET_KEY` or `secret_key:` for core detect APIs. For public or bearer-auth Gate flows, the client can also be created without a secret key:
 
 ```ruby
 require "tripwire/server"
@@ -44,21 +45,6 @@ session = client.sessions.get("sid_0123456789abcdefghjkmnpqrs")
 puts "#{session[:decision][:automation_status]} #{session[:highlights].first&.fetch(:summary, nil)}"
 ```
 
-### Gate APIs
-
-```ruby
-delivery_key_pair = Tripwire::Server::GateDelivery.create_delivery_key_pair
-
-services = client.gate.registry.list
-session = client.gate.sessions.create(
-  service_id: "tripwire",
-  account_name: "my-project",
-  delivery: delivery_key_pair[:delivery]
-)
-
-puts "#{services.first[:id]} #{session[:consent_url]}"
-```
-
 ### Sealed token verification
 
 ```ruby
@@ -69,22 +55,6 @@ if result[:ok]
 else
   warn result[:error].message
 end
-```
-
-### Gate delivery and webhook helpers
-
-```ruby
-key_pair = Tripwire::Server::GateDelivery.create_delivery_key_pair
-response = Tripwire::Server::GateDelivery.create_gate_approved_webhook_response(
-  delivery: key_pair[:delivery],
-  outputs: {
-    "TRIPWIRE_PUBLISHABLE_KEY" => "pk_live_...",
-    "TRIPWIRE_SECRET_KEY" => "sk_live_..."
-  }
-)
-payload = Tripwire::Server::GateDelivery.decrypt_gate_delivery_envelope(key_pair[:private_key], response[:encrypted_delivery])
-
-puts payload[:outputs]["TRIPWIRE_SECRET_KEY"]
 ```
 
 ### Pagination
@@ -116,6 +86,37 @@ puts updated[:name]
 ```ruby
 created = client.teams.api_keys.create("team_0123456789abcdefghjkmnpqrs", name: "Production", environment: "live")
 client.teams.api_keys.revoke("team_0123456789abcdefghjkmnpqrs", created[:id])
+```
+
+### Gate APIs
+
+```ruby
+delivery_key_pair = Tripwire::Server::GateDelivery.create_delivery_key_pair
+
+services = client.gate.registry.list
+session = client.gate.sessions.create(
+  service_id: "tripwire",
+  account_name: "my-project",
+  delivery: delivery_key_pair[:delivery]
+)
+
+puts "#{services.first[:id]} #{session[:consent_url]}"
+```
+
+### Gate delivery and webhook helpers
+
+```ruby
+key_pair = Tripwire::Server::GateDelivery.create_delivery_key_pair
+response = Tripwire::Server::GateDelivery.create_gate_approved_webhook_response(
+  delivery: key_pair[:delivery],
+  outputs: {
+    "TRIPWIRE_PUBLISHABLE_KEY" => "pk_live_...",
+    "TRIPWIRE_SECRET_KEY" => "sk_live_..."
+  }
+)
+payload = Tripwire::Server::GateDelivery.decrypt_gate_delivery_envelope(key_pair[:private_key], response[:encrypted_delivery])
+
+puts payload[:outputs]["TRIPWIRE_SECRET_KEY"]
 ```
 
 ### Error handling
