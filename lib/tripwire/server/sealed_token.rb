@@ -12,6 +12,7 @@ module Tripwire
       module_function
 
       def verify_tripwire_token(sealed_token, secret_key = nil)
+        CryptoSupport.ensure_supported_runtime!
         resolved_secret = secret_key || ENV["TRIPWIRE_SECRET_KEY"]
         raise ConfigurationError, "Missing Tripwire secret key. Pass secret_key explicitly or set TRIPWIRE_SECRET_KEY." if resolved_secret.nil? || resolved_secret.empty?
 

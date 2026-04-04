@@ -1,4 +1,5 @@
 require "json"
+require "rubygems"
 require "pathname"
 require "minitest/autorun"
 require "tripwire/server"
@@ -13,4 +14,10 @@ end
 
 class Minitest::Test
   include FixtureHelper
+
+  def require_gate_crypto_support!
+    return if Tripwire::Server::CryptoSupport.supported_runtime?
+
+    skip(Tripwire::Server::CryptoSupport.unsupported_runtime_message)
+  end
 end
