@@ -1,6 +1,21 @@
 require_relative "test_helper"
 
 class ContractTest < Minitest::Test
+  def strip_examples(value)
+    case value
+    when Array
+      value.map { |item| strip_examples(item) }
+    when Hash
+      value.each_with_object({}) do |(key, item), result|
+        next if key == "example"
+
+        result[key] = strip_examples(item)
+      end
+    else
+      value
+    end
+  end
+
   def spec
     @spec ||= JSON.parse(File.read(File.join(__dir__, "..", "spec", "openapi.json")))
   end
@@ -74,9 +89,9 @@ class ContractTest < Minitest::Test
     assert_equal "^team_[0123456789abcdefghjkmnpqrstvwxyz]{26}$", schemas.fetch("TeamId").fetch("pattern")
     assert_equal "^key_[0123456789abcdefghjkmnpqrstvwxyz]{26}$", schemas.fetch("ApiKeyId").fetch("pattern")
 
-    assert_equal({ "$ref" => "#/components/schemas/SessionId" }, schemas.fetch("SessionSummary").fetch("properties").fetch("id"))
-    assert_equal({ "$ref" => "#/components/schemas/TeamStatus" }, schemas.fetch("Team").fetch("properties").fetch("status"))
-    assert_equal({ "$ref" => "#/components/schemas/ApiKeyStatus" }, schemas.fetch("ApiKey").fetch("properties").fetch("status"))
+    assert_equal({ "$ref" => "#/components/schemas/SessionId" }, strip_examples(schemas.fetch("SessionSummary").fetch("properties").fetch("id")))
+    assert_equal({ "$ref" => "#/components/schemas/TeamStatus" }, strip_examples(schemas.fetch("Team").fetch("properties").fetch("status")))
+    assert_equal({ "$ref" => "#/components/schemas/ApiKeyStatus" }, strip_examples(schemas.fetch("ApiKey").fetch("properties").fetch("status")))
     assert_equal "#/components/schemas/KnownPublicErrorCode", schemas.fetch("PublicError").fetch("properties").fetch("code").fetch("x-tripwire-known-values-ref")
     assert_equal ["active", "suspended", "deleted"], schemas.fetch("TeamStatus").fetch("enum")
     assert_equal ["active", "revoked", "rotated"], schemas.fetch("ApiKeyStatus").fetch("enum")
@@ -85,19 +100,19 @@ class ContractTest < Minitest::Test
     end
     assert_equal(
       { "$ref" => "#/components/schemas/SessionDetailRequest" },
-      schemas.fetch("SessionDetail").fetch("properties").fetch("request")
+      strip_examples(schemas.fetch("SessionDetail").fetch("properties").fetch("request"))
     )
     assert_equal(
       { "$ref" => "#/components/schemas/SessionClientTelemetry" },
-      schemas.fetch("SessionDetail").fetch("properties").fetch("client_telemetry")
+      strip_examples(schemas.fetch("SessionDetail").fetch("properties").fetch("client_telemetry"))
     )
     assert_equal(
       { "anyOf" => [{ "$ref" => "#/components/schemas/SessionAutomation" }, { "type" => "null" }] },
-      schemas.fetch("SessionDetail").fetch("properties").fetch("automation")
+      strip_examples(schemas.fetch("SessionDetail").fetch("properties").fetch("automation"))
     )
     assert_equal(
       { "type" => "array", "items" => { "$ref" => "#/components/schemas/SessionSignalFired" } },
-      schemas.fetch("SessionDetail").fetch("properties").fetch("signals_fired")
+      strip_examples(schemas.fetch("SessionDetail").fetch("properties").fetch("signals_fired"))
     )
     assert_equal "string", schemas.fetch("SessionSignalFired").fetch("properties").fetch("signal").fetch("type")
     %w[allowed_origins rate_limit rotated_at revoked_at].each do |field|
