@@ -1,6 +1,21 @@
 require_relative "test_helper"
 
 class ContractTest < Minitest::Test
+  def strip_examples(value)
+    case value
+    when Array
+      value.map { |item| strip_examples(item) }
+    when Hash
+      value.each_with_object({}) do |(key, item), result|
+        next if key == "example"
+
+        result[key] = strip_examples(item)
+      end
+    else
+      value
+    end
+  end
+
   def spec
     @spec ||= JSON.parse(File.read(File.join(__dir__, "..", "spec", "openapi.json")))
   end
@@ -81,22 +96,31 @@ class ContractTest < Minitest::Test
     assert_equal "^org_[0123456789abcdefghjkmnpqrstvwxyz]{26}$", schemas.fetch("OrganizationId").fetch("pattern")
     assert_equal "^key_[0123456789abcdefghjkmnpqrstvwxyz]{26}$", schemas.fetch("ApiKeyId").fetch("pattern")
 
-    assert_equal "#/components/schemas/SessionId", schemas.fetch("SessionSummary").fetch("properties").fetch("id").fetch("$ref")
-    assert_equal "#/components/schemas/OrganizationStatus", schemas.fetch("Organization").fetch("properties").fetch("status").fetch("$ref")
-    assert_equal "#/components/schemas/ApiKeyStatus", schemas.fetch("ApiKey").fetch("properties").fetch("status").fetch("$ref")
+    assert_equal({ "$ref" => "#/components/schemas/SessionId" }, strip_examples(schemas.fetch("SessionSummary").fetch("properties").fetch("id")))
+    assert_equal({ "$ref" => "#/components/schemas/OrganizationStatus" }, strip_examples(schemas.fetch("Organization").fetch("properties").fetch("status")))
+    assert_equal({ "$ref" => "#/components/schemas/ApiKeyStatus" }, strip_examples(schemas.fetch("ApiKey").fetch("properties").fetch("status")))
     assert_equal "#/components/schemas/KnownPublicErrorCode", schemas.fetch("PublicError").fetch("properties").fetch("code").fetch("x-tripwire-known-values-ref")
     assert_equal ["active", "suspended", "deleted"], schemas.fetch("OrganizationStatus").fetch("enum")
     assert_equal ["active", "rotating", "revoked"], schemas.fetch("ApiKeyStatus").fetch("enum")
     %w[decision highlights automation web_bot_auth network runtime_integrity visitor_fingerprint connection_fingerprint previous_decisions request browser device analysis_coverage signals_fired client_telemetry].each do |field|
       assert_includes schemas.fetch("SessionDetail").fetch("required"), field
     end
-    session_detail_properties = schemas.fetch("SessionDetail").fetch("properties")
-    assert_equal "#/components/schemas/SessionDetailRequest", session_detail_properties.fetch("request").fetch("$ref")
-    assert_equal "#/components/schemas/SessionClientTelemetry", session_detail_properties.fetch("client_telemetry").fetch("$ref")
-    assert_equal "#/components/schemas/SessionAutomation", session_detail_properties.fetch("automation").fetch("anyOf")[0].fetch("$ref")
-    assert_equal "null", session_detail_properties.fetch("automation").fetch("anyOf")[1].fetch("type")
-    assert_equal "array", session_detail_properties.fetch("signals_fired").fetch("type")
-    assert_equal "#/components/schemas/SessionSignalFired", session_detail_properties.fetch("signals_fired").fetch("items").fetch("$ref")
+    assert_equal(
+      { "$ref" => "#/components/schemas/SessionDetailRequest" },
+      strip_examples(schemas.fetch("SessionDetail").fetch("properties").fetch("request"))
+    )
+    assert_equal(
+      { "$ref" => "#/components/schemas/SessionClientTelemetry" },
+      strip_examples(schemas.fetch("SessionDetail").fetch("properties").fetch("client_telemetry"))
+    )
+    assert_equal(
+      { "anyOf" => [{ "$ref" => "#/components/schemas/SessionAutomation" }, { "type" => "null" }] },
+      strip_examples(schemas.fetch("SessionDetail").fetch("properties").fetch("automation"))
+    )
+    assert_equal(
+      { "type" => "array", "items" => { "$ref" => "#/components/schemas/SessionSignalFired" } },
+      strip_examples(schemas.fetch("SessionDetail").fetch("properties").fetch("signals_fired"))
+    )
     assert_equal "string", schemas.fetch("SessionSignalFired").fetch("properties").fetch("signal").fetch("type")
     %w[type allowed_origins scopes key_preview last_used_at rate_limit rotated_at revoked_at grace_expires_at].each do |field|
       assert_includes schemas.fetch("ApiKey").fetch("required"), field
