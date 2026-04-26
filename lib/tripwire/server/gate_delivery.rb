@@ -217,7 +217,7 @@ module Tripwire
 
       def validate_gate_approved_webhook_payload(value)
         candidate = symbolize(value)
-        raise ArgumentError, "event must be gate.session.approved" unless candidate[:event] == "gate.session.approved"
+        raise ArgumentError, "webhook payload must not include event; use the webhook event envelope type" if candidate.key?(:event)
         raise ArgumentError, "service_id is required" if candidate[:service_id].to_s.empty?
         raise ArgumentError, "gate_session_id is required" if candidate[:gate_session_id].to_s.empty?
         raise ArgumentError, "gate_account_id is required" if candidate[:gate_account_id].to_s.empty?
@@ -230,7 +230,6 @@ module Tripwire
         raise ArgumentError, "tripwire.score must be a number or null" unless score.nil? || score.is_a?(Numeric)
 
         {
-          event: "gate.session.approved",
           service_id: candidate[:service_id],
           gate_session_id: candidate[:gate_session_id],
           gate_account_id: candidate[:gate_account_id],
@@ -253,6 +252,25 @@ module Tripwire
         secure_compare(expected, signature)
       rescue ArgumentError
         false
+      end
+
+      def parse_webhook_event(raw_body)
+        envelope = symbolize(JSON.parse(raw_body))
+        raise ArgumentError, "webhook event object must be webhook_event" unless envelope[:object] == "webhook_event"
+        raise ArgumentError, "webhook event id is required" if envelope[:id].to_s.empty?
+        raise ArgumentError, "webhook event type is required" if envelope[:type].to_s.empty?
+        raise ArgumentError, "webhook event created timestamp is required" if envelope[:created].to_s.empty?
+        raise ArgumentError, "webhook event data must be an object" unless envelope[:data].is_a?(Hash)
+
+        envelope[:data] = validate_gate_approved_webhook_payload(envelope[:data]) if envelope[:type] == "gate.session.approved"
+        envelope
+      end
+
+      def verify_and_parse_webhook_event(secret:, timestamp:, raw_body:, signature:, max_age_seconds: 300, now_seconds: nil)
+        unless verify_gate_webhook_signature(secret: secret, timestamp: timestamp, raw_body: raw_body, signature: signature, max_age_seconds: max_age_seconds, now_seconds: now_seconds)
+          raise ArgumentError, "Invalid Tripwire webhook signature"
+        end
+        parse_webhook_event(raw_body)
       end
 
       def symbolize(value)

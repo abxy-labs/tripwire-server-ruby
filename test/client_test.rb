@@ -240,7 +240,7 @@ class ClientTest < Minitest::Test
       name: "Acme Production",
       description: "Acme production signup flow",
       website: "https://acme.example.com",
-      webhook_url: "https://api.acme.example.com/v1/gate/webhook"
+      webhook_endpoint_id: "we_0123456789abcdef0123456789abcdef"
     )[:id]
     assert_equal true, client.gate.services.update("acme_prod", discoverable: true)[:discoverable]
     assert_equal "disabled", client.gate.services.disable("acme_prod")[:status]

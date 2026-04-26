@@ -31,6 +31,19 @@ class GateDeliveryTest < Minitest::Test
     assert_equal payload_fixture["service_id"], validated[:service_id]
     assert_equal payload_fixture["gate_session_id"], validated[:gate_session_id]
 
+    event = Tripwire::Server::GateDelivery.parse_webhook_event(signature_fixture["raw_body"])
+    assert_equal "webhook_event", event[:object]
+    assert_equal "gate.session.approved", event[:type]
+    assert_equal payload_fixture["service_id"], event[:data][:service_id]
+    parsed = Tripwire::Server::GateDelivery.verify_and_parse_webhook_event(
+      secret: signature_fixture["secret"],
+      timestamp: signature_fixture["timestamp"],
+      raw_body: signature_fixture["raw_body"],
+      signature: signature_fixture["signature"],
+      now_seconds: signature_fixture["now_seconds"]
+    )
+    assert_equal "gate.session.approved", parsed[:type]
+
     assert Tripwire::Server::GateDelivery.verify_gate_webhook_signature(
       secret: signature_fixture["secret"],
       timestamp: signature_fixture["timestamp"],
