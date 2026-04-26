@@ -20,13 +20,19 @@ class ContractTest < Minitest::Test
       "/v1/gate/sessions",
       "/v1/gate/sessions/{gateSessionId}",
       "/v1/gate/sessions/{gateSessionId}/ack",
+      "/v1/organizations",
+      "/v1/organizations/{organizationId}",
+      "/v1/organizations/{organizationId}/api-keys",
+      "/v1/organizations/{organizationId}/api-keys/{keyId}",
+      "/v1/organizations/{organizationId}/api-keys/{keyId}/rotations",
+      "/v1/organizations/{organizationId}/events",
+      "/v1/organizations/{organizationId}/events/{eventId}",
+      "/v1/organizations/{organizationId}/webhooks/endpoints",
+      "/v1/organizations/{organizationId}/webhooks/endpoints/{endpointId}",
+      "/v1/organizations/{organizationId}/webhooks/endpoints/{endpointId}/rotations",
+      "/v1/organizations/{organizationId}/webhooks/endpoints/{endpointId}/test",
       "/v1/sessions",
-      "/v1/sessions/{sessionId}",
-      "/v1/teams",
-      "/v1/teams/{teamId}",
-      "/v1/teams/{teamId}/api-keys",
-      "/v1/teams/{teamId}/api-keys/{keyId}",
-      "/v1/teams/{teamId}/api-keys/{keyId}/rotations"
+      "/v1/sessions/{sessionId}"
     ]
 
     assert_equal expected.sort, spec.fetch("paths").keys.sort
@@ -52,13 +58,14 @@ class ContractTest < Minitest::Test
       "api/gate/login-session-consume.json",
       "api/gate/agent-token-verify.json",
       "api/gate/agent-token-revoke.json",
-      "api/teams/team.json",
-      "api/teams/team-create.json",
-      "api/teams/team-update.json",
-      "api/teams/api-key-create.json",
-      "api/teams/api-key-list.json",
-      "api/teams/api-key-rotate.json",
-      "api/teams/api-key-revoke.json"
+      "api/organizations/organization.json",
+      "api/organizations/organization-create.json",
+      "api/organizations/organization-update.json",
+      "api/organizations/api-key-create.json",
+      "api/organizations/api-key-list.json",
+      "api/organizations/api-key-update.json",
+      "api/organizations/api-key-rotate.json",
+      "api/organizations/api-key-revoke.json"
     ]
 
     paths.each do |relative_path|
@@ -71,38 +78,30 @@ class ContractTest < Minitest::Test
 
     assert_equal "^sid_[0123456789abcdefghjkmnpqrstvwxyz]{26}$", schemas.fetch("SessionId").fetch("pattern")
     assert_equal "^vid_[0123456789abcdefghjkmnpqrstvwxyz]{26}$", schemas.fetch("FingerprintId").fetch("pattern")
-    assert_equal "^team_[0123456789abcdefghjkmnpqrstvwxyz]{26}$", schemas.fetch("TeamId").fetch("pattern")
+    assert_equal "^org_[0123456789abcdefghjkmnpqrstvwxyz]{26}$", schemas.fetch("OrganizationId").fetch("pattern")
     assert_equal "^key_[0123456789abcdefghjkmnpqrstvwxyz]{26}$", schemas.fetch("ApiKeyId").fetch("pattern")
 
-    assert_equal({ "$ref" => "#/components/schemas/SessionId" }, schemas.fetch("SessionSummary").fetch("properties").fetch("id"))
-    assert_equal({ "$ref" => "#/components/schemas/TeamStatus" }, schemas.fetch("Team").fetch("properties").fetch("status"))
-    assert_equal({ "$ref" => "#/components/schemas/ApiKeyStatus" }, schemas.fetch("ApiKey").fetch("properties").fetch("status"))
+    assert_equal "#/components/schemas/SessionId", schemas.fetch("SessionSummary").fetch("properties").fetch("id").fetch("$ref")
+    assert_equal "#/components/schemas/OrganizationStatus", schemas.fetch("Organization").fetch("properties").fetch("status").fetch("$ref")
+    assert_equal "#/components/schemas/ApiKeyStatus", schemas.fetch("ApiKey").fetch("properties").fetch("status").fetch("$ref")
     assert_equal "#/components/schemas/KnownPublicErrorCode", schemas.fetch("PublicError").fetch("properties").fetch("code").fetch("x-tripwire-known-values-ref")
-    assert_equal ["active", "suspended", "deleted"], schemas.fetch("TeamStatus").fetch("enum")
-    assert_equal ["active", "revoked", "rotated"], schemas.fetch("ApiKeyStatus").fetch("enum")
+    assert_equal ["active", "suspended", "deleted"], schemas.fetch("OrganizationStatus").fetch("enum")
+    assert_equal ["active", "rotating", "revoked"], schemas.fetch("ApiKeyStatus").fetch("enum")
     %w[decision highlights automation web_bot_auth network runtime_integrity visitor_fingerprint connection_fingerprint previous_decisions request browser device analysis_coverage signals_fired client_telemetry].each do |field|
       assert_includes schemas.fetch("SessionDetail").fetch("required"), field
     end
-    assert_equal(
-      { "$ref" => "#/components/schemas/SessionDetailRequest" },
-      schemas.fetch("SessionDetail").fetch("properties").fetch("request")
-    )
-    assert_equal(
-      { "$ref" => "#/components/schemas/SessionClientTelemetry" },
-      schemas.fetch("SessionDetail").fetch("properties").fetch("client_telemetry")
-    )
-    assert_equal(
-      { "anyOf" => [{ "$ref" => "#/components/schemas/SessionAutomation" }, { "type" => "null" }] },
-      schemas.fetch("SessionDetail").fetch("properties").fetch("automation")
-    )
-    assert_equal(
-      { "type" => "array", "items" => { "$ref" => "#/components/schemas/SessionSignalFired" } },
-      schemas.fetch("SessionDetail").fetch("properties").fetch("signals_fired")
-    )
+    session_detail_properties = schemas.fetch("SessionDetail").fetch("properties")
+    assert_equal "#/components/schemas/SessionDetailRequest", session_detail_properties.fetch("request").fetch("$ref")
+    assert_equal "#/components/schemas/SessionClientTelemetry", session_detail_properties.fetch("client_telemetry").fetch("$ref")
+    assert_equal "#/components/schemas/SessionAutomation", session_detail_properties.fetch("automation").fetch("anyOf")[0].fetch("$ref")
+    assert_equal "null", session_detail_properties.fetch("automation").fetch("anyOf")[1].fetch("type")
+    assert_equal "array", session_detail_properties.fetch("signals_fired").fetch("type")
+    assert_equal "#/components/schemas/SessionSignalFired", session_detail_properties.fetch("signals_fired").fetch("items").fetch("$ref")
     assert_equal "string", schemas.fetch("SessionSignalFired").fetch("properties").fetch("signal").fetch("type")
-    %w[allowed_origins rate_limit rotated_at revoked_at].each do |field|
+    %w[type allowed_origins scopes key_preview last_used_at rate_limit rotated_at revoked_at grace_expires_at].each do |field|
       assert_includes schemas.fetch("ApiKey").fetch("required"), field
     end
+    assert_includes schemas.fetch("IssuedApiKey").fetch("required"), "revealed_key"
     refute_includes schemas.fetch("GateManagedService").fetch("properties").keys, "team_id"
     refute_includes schemas.fetch("GateManagedService").fetch("properties").keys, "webhook_secret"
     refute_includes schemas.keys, "CollectBatchResponse"
@@ -113,10 +112,12 @@ class ContractTest < Minitest::Test
     assert_equal ["Sessions"], spec.fetch("paths").fetch("/v1/sessions").fetch("get").fetch("tags")
     assert_equal "getVisitorFingerprint", spec.fetch("paths").fetch("/v1/fingerprints/{visitorId}").fetch("get").fetch("operationId")
     assert_equal ["Visitor fingerprints"], spec.fetch("paths").fetch("/v1/fingerprints/{visitorId}").fetch("get").fetch("tags")
-    assert_equal "updateTeam", spec.fetch("paths").fetch("/v1/teams/{teamId}").fetch("patch").fetch("operationId")
-    assert_equal ["Teams"], spec.fetch("paths").fetch("/v1/teams/{teamId}").fetch("patch").fetch("tags")
-    assert_equal "rotateTeamApiKey", spec.fetch("paths").fetch("/v1/teams/{teamId}/api-keys/{keyId}/rotations").fetch("post").fetch("operationId")
-    assert_equal ["API Keys"], spec.fetch("paths").fetch("/v1/teams/{teamId}/api-keys/{keyId}/rotations").fetch("post").fetch("tags")
+    assert_equal "updateOrganization", spec.fetch("paths").fetch("/v1/organizations/{organizationId}").fetch("patch").fetch("operationId")
+    assert_equal ["Organizations"], spec.fetch("paths").fetch("/v1/organizations/{organizationId}").fetch("patch").fetch("tags")
+    assert_equal "updateOrganizationApiKey", spec.fetch("paths").fetch("/v1/organizations/{organizationId}/api-keys/{keyId}").fetch("patch").fetch("operationId")
+    assert_equal ["API Keys"], spec.fetch("paths").fetch("/v1/organizations/{organizationId}/api-keys/{keyId}").fetch("patch").fetch("tags")
+    assert_equal "rotateOrganizationApiKey", spec.fetch("paths").fetch("/v1/organizations/{organizationId}/api-keys/{keyId}/rotations").fetch("post").fetch("operationId")
+    assert_equal ["API Keys"], spec.fetch("paths").fetch("/v1/organizations/{organizationId}/api-keys/{keyId}/rotations").fetch("post").fetch("tags")
     assert_equal "createManagedGateService", spec.fetch("paths").fetch("/v1/gate/services").fetch("post").fetch("operationId")
     assert_equal ["Gate"], spec.fetch("paths").fetch("/v1/gate/services").fetch("post").fetch("tags")
     assert_equal "pollGateSession", spec.fetch("paths").fetch("/v1/gate/sessions/{gateSessionId}").fetch("get").fetch("operationId")

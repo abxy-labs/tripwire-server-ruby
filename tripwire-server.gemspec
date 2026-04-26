@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.email = ["support@tripwirejs.com"]
 
   spec.summary = "Official Tripwire Ruby server SDK"
-  spec.description = "Customer-facing Ruby SDK for Tripwire Sessions, Fingerprints, Teams, and sealed token verification."
+  spec.description = "Customer-facing Ruby SDK for Tripwire Sessions, Fingerprints, Organizations, and sealed token verification."
   spec.homepage = "https://github.com/abxy-labs/tripwire-server-ruby"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.3.0"

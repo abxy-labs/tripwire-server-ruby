@@ -64,17 +64,18 @@ class ClientTest < Minitest::Test
     assert_equal 5, client.timeout
   end
 
-  def test_sessions_fingerprints_teams_and_api_keys
+  def test_sessions_fingerprints_organizations_and_api_keys
     session_list = load_fixture("api/sessions/list.json")
     session_detail = load_fixture("api/sessions/detail.json")
     fingerprint_list = load_fixture("api/fingerprints/list.json")
     fingerprint_detail = load_fixture("api/fingerprints/detail.json")
-    team_get = load_fixture("api/teams/team.json")
-    team_create = load_fixture("api/teams/team-create.json")
-    team_update = load_fixture("api/teams/team-update.json")
-    api_key_create = load_fixture("api/teams/api-key-create.json")
-    api_key_list = load_fixture("api/teams/api-key-list.json")
-    api_key_rotate = load_fixture("api/teams/api-key-rotate.json")
+    organization_get = load_fixture("api/organizations/organization.json")
+    organization_create = load_fixture("api/organizations/organization-create.json")
+    organization_update = load_fixture("api/organizations/organization-update.json")
+    api_key_create = load_fixture("api/organizations/api-key-create.json")
+    api_key_list = load_fixture("api/organizations/api-key-list.json")
+    api_key_update = load_fixture("api/organizations/api-key-update.json")
+    api_key_rotate = load_fixture("api/organizations/api-key-rotate.json")
 
     client = Tripwire::Server::Client.new(
       secret_key: "sk_live_test",
@@ -108,19 +109,21 @@ class ClientTest < Minitest::Test
           [200, {}, JSON.dump(fingerprint_list)]
         when ["GET", "https://api.tripwirejs.com/v1/fingerprints/vid_456789abcdefghjkmnpqrstvwx"]
           [200, {}, JSON.dump(fingerprint_detail)]
-        when ["POST", "https://api.tripwirejs.com/v1/teams"]
-          [201, {}, JSON.dump(team_create)]
-        when ["GET", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy"]
-          [200, {}, JSON.dump(team_get)]
-        when ["PATCH", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy"]
-          [200, {}, JSON.dump(team_update)]
-        when ["POST", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys"]
+        when ["POST", "https://api.tripwirejs.com/v1/organizations"]
+          [201, {}, JSON.dump(organization_create)]
+        when ["GET", "https://api.tripwirejs.com/v1/organizations/org_56789abcdefghjkmnpqrstvwxy"]
+          [200, {}, JSON.dump(organization_get)]
+        when ["PATCH", "https://api.tripwirejs.com/v1/organizations/org_56789abcdefghjkmnpqrstvwxy"]
+          [200, {}, JSON.dump(organization_update)]
+        when ["POST", "https://api.tripwirejs.com/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/api-keys"]
           [201, {}, JSON.dump(api_key_create)]
-        when ["GET", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys"]
+        when ["GET", "https://api.tripwirejs.com/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/api-keys"]
           [200, {}, JSON.dump(api_key_list)]
-        when ["DELETE", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz"]
-          [200, {}, JSON.dump(load_fixture("api/teams/api-key-revoke.json"))]
-        when ["POST", "https://api.tripwirejs.com/v1/teams/team_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz/rotations"]
+        when ["PATCH", "https://api.tripwirejs.com/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz"]
+          [200, {}, JSON.dump(api_key_update)]
+        when ["DELETE", "https://api.tripwirejs.com/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz"]
+          [200, {}, JSON.dump(load_fixture("api/organizations/api-key-revoke.json"))]
+        when ["POST", "https://api.tripwirejs.com/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/api-keys/key_6789abcdefghjkmnpqrstvwxyz/rotations"]
           [201, {}, JSON.dump(api_key_rotate)]
         else
           flunk("Unexpected request #{request[:method]} #{request[:url]}")
@@ -131,13 +134,65 @@ class ClientTest < Minitest::Test
     assert_equal "sid_0123456789abcdefghjkmnpqrs", client.sessions.get("sid_0123456789abcdefghjkmnpqrs")[:id]
     assert_equal ["sid_0123456789abcdefghjkmnpqrs", "sid_123456789abcdefghjkmnpqrst"], client.sessions.iter.map { |item| item[:id] }
     assert_equal "vid_456789abcdefghjkmnpqrstvwx", client.fingerprints.get("vid_456789abcdefghjkmnpqrstvwx")[:id]
-    assert_equal "team_56789abcdefghjkmnpqrstvwxy", client.teams.get("team_56789abcdefghjkmnpqrstvwxy")[:id]
-    assert_equal "team_56789abcdefghjkmnpqrstvwxy", client.teams.create(name: "Example Team", slug: "example-team")[:id]
-    assert_equal "Example Team", client.teams.update("team_56789abcdefghjkmnpqrstvwxy", name: "Updated Example Team")[:name]
-    assert_equal "sk_live_example", client.teams.api_keys.create("team_56789abcdefghjkmnpqrstvwxy", name: "Production")[:secret_key]
-    assert_equal "key_6789abcdefghjkmnpqrstvwxyz", client.teams.api_keys.list("team_56789abcdefghjkmnpqrstvwxy").items.first[:id]
-    assert_equal "key_6789abcdefghjkmnpqrstvwxyz", client.teams.api_keys.revoke("team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")[:id]
-    assert_equal "sk_live_rotated", client.teams.api_keys.rotate("team_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")[:secret_key]
+    assert_equal "org_56789abcdefghjkmnpqrstvwxy", client.organizations.get("org_56789abcdefghjkmnpqrstvwxy")[:id]
+    assert_equal "org_56789abcdefghjkmnpqrstvwxy", client.organizations.create(name: "Example Organization", slug: "example-organization")[:id]
+    assert_equal "Example Organization", client.organizations.update("org_56789abcdefghjkmnpqrstvwxy", name: "Updated Example Organization")[:name]
+    assert_equal "sk_live_[example_secret_key]", client.organizations.api_keys.create("org_56789abcdefghjkmnpqrstvwxy", name: "Production Backend")[:revealed_key]
+    assert_equal "key_6789abcdefghjkmnpqrstvwxyz", client.organizations.api_keys.list("org_56789abcdefghjkmnpqrstvwxy").items.first[:id]
+    assert_equal "Updated Web App", client.organizations.api_keys.update("org_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz", name: "Updated Web App")[:name]
+    assert_equal "key_6789abcdefghjkmnpqrstvwxyz", client.organizations.api_keys.revoke("org_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")[:id]
+    assert_equal "sk_live_[rotated_example_secret_key]", client.organizations.api_keys.rotate("org_56789abcdefghjkmnpqrstvwxy", "key_6789abcdefghjkmnpqrstvwxyz")[:revealed_key]
+  end
+
+  def test_webhooks_use_event_history_endpoints
+    delivery = {
+      object: "webhook_delivery",
+      id: "wdlv_0123456789abcdef0123456789abcdef",
+      event_id: "wevt_0123456789abcdef0123456789abcdef",
+      endpoint_id: "we_0123456789abcdef0123456789abcdef",
+      event_type: "session.fingerprint.calculated",
+      status: "succeeded",
+      attempts: 1,
+      response_status: 200,
+      response_body: "{}",
+      error: nil,
+      created_at: "2026-03-24T20:00:00.000Z",
+      updated_at: "2026-03-24T20:00:05.000Z"
+    }
+    event = {
+      object: "event",
+      id: "wevt_0123456789abcdef0123456789abcdef",
+      type: "session.fingerprint.calculated",
+      subject: { type: "session", id: "sid_0123456789abcdefghjkmnpqrs" },
+      data: { source: "waitForFingerprint" },
+      webhook_deliveries: [delivery],
+      created_at: "2026-03-24T20:00:00.000Z"
+    }
+
+    client = Tripwire::Server::Client.new(
+      secret_key: "sk_live_test",
+      transport: lambda do |request|
+        assert_equal "Bearer sk_live_test", request[:headers]["Authorization"]
+        case [request[:method], request[:url]]
+        when ["GET", "https://api.tripwirejs.com/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/events?endpoint_id=we_0123456789abcdef0123456789abcdef&type=session.fingerprint.calculated&limit=25"]
+          [200, {}, JSON.dump(data: [event], pagination: { limit: 25, has_more: false }, meta: { request_id: "req_0123456789abcdef0123456789abcdef" })]
+        when ["GET", "https://api.tripwirejs.com/v1/organizations/org_56789abcdefghjkmnpqrstvwxy/events/wevt_0123456789abcdef0123456789abcdef"]
+          [200, {}, JSON.dump(data: event, meta: { request_id: "req_0123456789abcdef0123456789abcdef" })]
+        else
+          flunk("Unexpected request #{request[:method]} #{request[:url]}")
+        end
+      end
+    )
+
+    events = client.webhooks.list_events(
+      "org_56789abcdefghjkmnpqrstvwxy",
+      endpoint_id: "we_0123456789abcdef0123456789abcdef",
+      type: "session.fingerprint.calculated",
+      limit: 25
+    )
+    assert_equal "sid_0123456789abcdefghjkmnpqrs", events.items.first[:subject][:id]
+    assert_equal "succeeded", events.items.first[:webhook_deliveries].first[:status]
+    assert_equal "session.fingerprint.calculated", client.webhooks.retrieve_event("org_56789abcdefghjkmnpqrstvwxy", "wevt_0123456789abcdef0123456789abcdef")[:type]
   end
 
   def test_api_errors_are_parsed
