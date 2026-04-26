@@ -4,13 +4,14 @@
 ![Ruby 3.3+](https://img.shields.io/badge/ruby-3.3%2B-CC342D?logo=ruby&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-0f766e.svg)
 
-The Tripwire Ruby library provides convenient access to the Tripwire API from applications written in Ruby. It includes a client for Sessions, visitor fingerprints, Teams, Team API key management, sealed token verification, Gate, and Gate delivery/webhook helpers.
+The Tripwire Ruby library provides convenient access to the Tripwire API from applications written in Ruby. It includes a client for Sessions, visitor fingerprints, Organizations, Organization API key management, sealed token verification, Gate, and Gate delivery/webhook helpers.
 
 The library also provides:
 
 - a fast configuration path using `TRIPWIRE_SECRET_KEY`
 - lazy helpers for cursor-based pagination
 - structured API errors and built-in sealed token verification
+- webhook endpoint management, test sends, and event delivery history
 - public, bearer-token, and secret-key auth modes for Gate flows
 - Gate delivery/webhook helpers
 
@@ -72,20 +73,39 @@ fingerprint = client.fingerprints.get("vid_0123456789abcdefghjkmnpqrs")
 puts fingerprint[:id]
 ```
 
-### Teams
+### Organizations
 
 ```ruby
-team = client.teams.get("team_0123456789abcdefghjkmnpqrs")
-updated = client.teams.update("team_0123456789abcdefghjkmnpqrs", name: "New Name")
+organization = client.organizations.get("org_0123456789abcdefghjkmnpqrs")
+updated = client.organizations.update("org_0123456789abcdefghjkmnpqrs", name: "New Name")
 
 puts updated[:name]
 ```
 
-### Team API keys
+### Organization API keys
 
 ```ruby
-created = client.teams.api_keys.create("team_0123456789abcdefghjkmnpqrs", name: "Production", environment: "live")
-client.teams.api_keys.revoke("team_0123456789abcdefghjkmnpqrs", created[:id])
+created = client.organizations.api_keys.create("org_0123456789abcdefghjkmnpqrs", name: "Production", type: "secret", environment: "live")
+client.organizations.api_keys.revoke("org_0123456789abcdefghjkmnpqrs", created[:id])
+```
+
+### Webhooks
+
+```ruby
+endpoint = client.webhooks.create_endpoint(
+  "org_0123456789abcdefghjkmnpqrs",
+  name: "Production alerts",
+  url: "https://example.com/tripwire/webhook",
+  event_types: ["session.result.persisted", "gate.session.approved"]
+)
+
+events = client.webhooks.list_events(
+  "org_0123456789abcdefghjkmnpqrs",
+  endpoint_id: endpoint[:id],
+  type: "session.result.persisted"
+)
+
+puts events.items.first[:webhook_deliveries].first[:status]
 ```
 
 ### Gate APIs

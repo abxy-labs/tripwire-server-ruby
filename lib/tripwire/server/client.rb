@@ -10,7 +10,7 @@ module Tripwire
       DEFAULT_TIMEOUT = 30
       SDK_CLIENT_HEADER = "tripwire-server-ruby/0.1.0".freeze
 
-      attr_reader :sessions, :fingerprints, :teams, :gate, :timeout
+      attr_reader :sessions, :fingerprints, :organizations, :gate, :webhooks, :timeout
 
       def initialize(secret_key: ENV["TRIPWIRE_SECRET_KEY"], base_url: DEFAULT_BASE_URL, timeout: DEFAULT_TIMEOUT, user_agent: nil, transport: nil)
         @secret_key = secret_key
@@ -21,8 +21,9 @@ module Tripwire
 
         @sessions = SessionsResource.new(self)
         @fingerprints = FingerprintsResource.new(self)
-        @teams = TeamsResource.new(self)
+        @organizations = OrganizationsResource.new(self)
         @gate = GateResource.new(self)
+        @webhooks = WebhooksResource.new(self)
       end
 
       def request_json(method, path, query: {}, body: nil, expect_content: true, auth: { kind: :secret })
@@ -220,30 +221,39 @@ module Tripwire
     end
 
     class ApiKeysResource < BaseResource
-      def create(team_id, name: nil, environment: nil, allowed_origins: nil, rate_limit: nil)
-        payload = @client.request_json("POST", "/v1/teams/#{CGI.escape(team_id)}/api-keys", body: compact({
+      def create(organization_id, name:, type: nil, environment: nil, allowed_origins: nil, scopes: nil)
+        payload = @client.request_json("POST", "/v1/organizations/#{CGI.escape(organization_id)}/api-keys", body: compact({
           name: name,
+          type: type,
           environment: environment,
           allowed_origins: allowed_origins,
-          rate_limit: rate_limit
+          scopes: scopes
         }))
         payload[:data]
       end
 
-      def list(team_id, limit: nil, cursor: nil)
-        payload = @client.request_json("GET", "/v1/teams/#{CGI.escape(team_id)}/api-keys", query: {
+      def list(organization_id, limit: nil, cursor: nil)
+        payload = @client.request_json("GET", "/v1/organizations/#{CGI.escape(organization_id)}/api-keys", query: {
           limit: limit,
           cursor: cursor
         })
         list_result(payload)
       end
 
-      def revoke(team_id, key_id)
-        @client.request_json("DELETE", "/v1/teams/#{CGI.escape(team_id)}/api-keys/#{CGI.escape(key_id)}")[:data]
+      def update(organization_id, key_id, name: nil, allowed_origins: nil, scopes: nil)
+        @client.request_json("PATCH", "/v1/organizations/#{CGI.escape(organization_id)}/api-keys/#{CGI.escape(key_id)}", body: compact({
+          name: name,
+          allowed_origins: allowed_origins,
+          scopes: scopes
+        }))[:data]
       end
 
-      def rotate(team_id, key_id)
-        payload = @client.request_json("POST", "/v1/teams/#{CGI.escape(team_id)}/api-keys/#{CGI.escape(key_id)}/rotations")
+      def revoke(organization_id, key_id)
+        @client.request_json("DELETE", "/v1/organizations/#{CGI.escape(organization_id)}/api-keys/#{CGI.escape(key_id)}")[:data]
+      end
+
+      def rotate(organization_id, key_id)
+        payload = @client.request_json("POST", "/v1/organizations/#{CGI.escape(organization_id)}/api-keys/#{CGI.escape(key_id)}/rotations")
         payload[:data]
       end
 
@@ -254,7 +264,7 @@ module Tripwire
       end
     end
 
-    class TeamsResource < BaseResource
+    class OrganizationsResource < BaseResource
       attr_reader :api_keys
 
       def initialize(client)
@@ -263,15 +273,15 @@ module Tripwire
       end
 
       def create(name:, slug:)
-        @client.request_json("POST", "/v1/teams", body: { name: name, slug: slug })[:data]
+        @client.request_json("POST", "/v1/organizations", body: { name: name, slug: slug })[:data]
       end
 
-      def get(team_id)
-        @client.request_json("GET", "/v1/teams/#{CGI.escape(team_id)}")[:data]
+      def get(organization_id)
+        @client.request_json("GET", "/v1/organizations/#{CGI.escape(organization_id)}")[:data]
       end
 
-      def update(team_id, name: nil, status: nil)
-        @client.request_json("PATCH", "/v1/teams/#{CGI.escape(team_id)}", body: {
+      def update(organization_id, name: nil, status: nil)
+        @client.request_json("PATCH", "/v1/organizations/#{CGI.escape(organization_id)}", body: {
           name: name,
           status: status
         }.reject { |_key, value| value.nil? })[:data]
@@ -310,7 +320,7 @@ module Tripwire
         @client.request_json("GET", "/v1/gate/services/#{CGI.escape(service_id)}")[:data]
       end
 
-      def create(id:, name:, description:, website:, webhook_url:, discoverable: nil, dashboard_login_url: nil, webhook_secret: nil, env_vars: nil, docs_url: nil, sdks: nil, branding: nil, consent: nil)
+      def create(id:, name:, description:, website:, webhook_endpoint_id:, discoverable: nil, dashboard_login_url: nil, env_vars: nil, docs_url: nil, sdks: nil, branding: nil, consent: nil)
         @client.request_json("POST", "/v1/gate/services", body: compact({
           id: id,
           discoverable: discoverable,
@@ -318,8 +328,7 @@ module Tripwire
           description: description,
           website: website,
           dashboard_login_url: dashboard_login_url,
-          webhook_url: webhook_url,
-          webhook_secret: webhook_secret,
+          webhook_endpoint_id: webhook_endpoint_id,
           env_vars: env_vars,
           docs_url: docs_url,
           sdks: sdks,
@@ -328,15 +337,14 @@ module Tripwire
         }))[:data]
       end
 
-      def update(service_id, discoverable: nil, name: nil, description: nil, website: nil, dashboard_login_url: nil, webhook_url: nil, webhook_secret: nil, env_vars: nil, docs_url: nil, sdks: nil, branding: nil, consent: nil)
+      def update(service_id, discoverable: nil, name: nil, description: nil, website: nil, dashboard_login_url: nil, webhook_endpoint_id: nil, env_vars: nil, docs_url: nil, sdks: nil, branding: nil, consent: nil)
         @client.request_json("PATCH", "/v1/gate/services/#{CGI.escape(service_id)}", body: compact({
           discoverable: discoverable,
           name: name,
           description: description,
           website: website,
           dashboard_login_url: dashboard_login_url,
-          webhook_url: webhook_url,
-          webhook_secret: webhook_secret,
+          webhook_endpoint_id: webhook_endpoint_id,
           env_vars: env_vars,
           docs_url: docs_url,
           sdks: sdks,
@@ -353,6 +361,50 @@ module Tripwire
 
       def compact(hash)
         hash.reject { |_key, value| value.nil? }
+      end
+    end
+
+    class WebhooksResource < BaseResource
+      def list_endpoints(organization_id)
+        payload = @client.request_json("GET", "/v1/organizations/#{CGI.escape(organization_id)}/webhooks/endpoints")
+        list_result(payload)
+      end
+
+      def create_endpoint(organization_id, name:, url:, event_types:)
+        @client.request_json("POST", "/v1/organizations/#{CGI.escape(organization_id)}/webhooks/endpoints", body: {
+          name: name,
+          url: url,
+          event_types: event_types
+        })[:data]
+      end
+
+      def update_endpoint(organization_id, endpoint_id, **updates)
+        @client.request_json("PATCH", "/v1/organizations/#{CGI.escape(organization_id)}/webhooks/endpoints/#{CGI.escape(endpoint_id)}", body: updates)[:data]
+      end
+
+      def disable_endpoint(organization_id, endpoint_id)
+        @client.request_json("DELETE", "/v1/organizations/#{CGI.escape(organization_id)}/webhooks/endpoints/#{CGI.escape(endpoint_id)}")[:data]
+      end
+
+      def rotate_secret(organization_id, endpoint_id)
+        @client.request_json("POST", "/v1/organizations/#{CGI.escape(organization_id)}/webhooks/endpoints/#{CGI.escape(endpoint_id)}/rotations")[:data]
+      end
+
+      def send_test(organization_id, endpoint_id)
+        @client.request_json("POST", "/v1/organizations/#{CGI.escape(organization_id)}/webhooks/endpoints/#{CGI.escape(endpoint_id)}/test")[:data]
+      end
+
+      def list_events(organization_id, endpoint_id: nil, type: nil, limit: nil)
+        payload = @client.request_json("GET", "/v1/organizations/#{CGI.escape(organization_id)}/events", query: {
+          endpoint_id: endpoint_id,
+          type: type,
+          limit: limit
+        })
+        list_result(payload)
+      end
+
+      def retrieve_event(organization_id, event_id)
+        @client.request_json("GET", "/v1/organizations/#{CGI.escape(organization_id)}/events/#{CGI.escape(event_id)}")[:data]
       end
     end
 
