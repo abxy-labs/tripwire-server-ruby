@@ -39,6 +39,12 @@ module Tripwire
         XDG_CONFIG_HOME
       ].freeze
       BLOCKED_GATE_ENV_VAR_PREFIXES = %w[NPM_CONFIG_ BUN_CONFIG_ GIT_CONFIG_].freeze
+      WEBHOOK_EVENT_TYPES = %w[
+        session.fingerprint.calculated
+        session.result.persisted
+        gate.session.approved
+        webhook.test
+      ].freeze
       GATE_DELIVERY_HKDF_INFO = "tripwire-gate-delivery:v1".b.freeze
       X25519_SPKI_PREFIX = ["302a300506032b656e032100"].pack("H*").freeze
 
@@ -259,6 +265,7 @@ module Tripwire
         raise ArgumentError, "webhook event object must be webhook_event" unless envelope[:object] == "webhook_event"
         raise ArgumentError, "webhook event id is required" if envelope[:id].to_s.empty?
         raise ArgumentError, "webhook event type is required" if envelope[:type].to_s.empty?
+        raise ArgumentError, "unsupported webhook event type: #{envelope[:type]}" unless WEBHOOK_EVENT_TYPES.include?(envelope[:type])
         raise ArgumentError, "webhook event created timestamp is required" if envelope[:created].to_s.empty?
         raise ArgumentError, "webhook event data must be an object" unless envelope[:data].is_a?(Hash)
 

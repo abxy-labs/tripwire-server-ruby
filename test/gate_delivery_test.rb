@@ -65,6 +65,16 @@ class GateDeliveryTest < Minitest::Test
       signature: signature_fixture["signature"],
       now_seconds: signature_fixture["now_seconds"]
     )
+    error = assert_raises(ArgumentError) do
+      Tripwire::Server::GateDelivery.parse_webhook_event({
+        id: "wevt_0123456789abcdefghjkmnpqrs",
+        object: "webhook_event",
+        type: "unknown.event",
+        created: "2026-04-27T00:00:00.000Z",
+        data: {}
+      }.to_json)
+    end
+    assert_match(/unsupported webhook event type/, error.message)
 
     env_policy_fixture["derive_agent_token_env_key"].each do |entry|
       assert_equal entry["expected"], Tripwire::Server::GateDelivery.derive_gate_agent_token_env_key(entry["service_id"])
