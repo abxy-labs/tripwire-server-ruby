@@ -102,7 +102,7 @@ class ContractTest < Minitest::Test
     assert_equal "#/components/schemas/KnownPublicErrorCode", schemas.fetch("PublicError").fetch("properties").fetch("code").fetch("x-tripwire-known-values-ref")
     assert_equal ["active", "suspended", "deleted"], schemas.fetch("OrganizationStatus").fetch("enum")
     assert_equal ["active", "rotating", "revoked"], schemas.fetch("ApiKeyStatus").fetch("enum")
-    %w[decision highlights automation web_bot_auth network runtime_integrity visitor_fingerprint connection_fingerprint previous_decisions request browser device analysis_coverage signals_fired client_telemetry].each do |field|
+    %w[decision highlights attribution web_bot_auth network runtime_integrity visitor_fingerprint connection_fingerprint previous_decisions request browser device analysis_coverage signals_fired client_telemetry].each do |field|
       assert_includes schemas.fetch("SessionDetail").fetch("required"), field
     end
     assert_equal(
@@ -114,8 +114,8 @@ class ContractTest < Minitest::Test
       strip_examples(schemas.fetch("SessionDetail").fetch("properties").fetch("client_telemetry"))
     )
     assert_equal(
-      { "anyOf" => [{ "$ref" => "#/components/schemas/SessionAutomation" }, { "type" => "null" }] },
-      strip_examples(schemas.fetch("SessionDetail").fetch("properties").fetch("automation"))
+      { "anyOf" => [{ "$ref" => "#/components/schemas/SessionAttribution" }, { "type" => "null" }] },
+      strip_examples(schemas.fetch("SessionDetail").fetch("properties").fetch("attribution"))
     )
     assert_equal(
       { "type" => "array", "items" => { "$ref" => "#/components/schemas/SessionSignalFired" } },
