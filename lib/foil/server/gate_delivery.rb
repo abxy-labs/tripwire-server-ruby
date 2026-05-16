@@ -3,7 +3,7 @@ require "digest"
 require "json"
 require "openssl"
 
-module Tripwire
+module Foil
   module Server
     module GateDelivery
       GATE_DELIVERY_VERSION = 1
@@ -45,7 +45,7 @@ module Tripwire
         gate.session.approved
         webhook.test
       ].freeze
-      GATE_DELIVERY_HKDF_INFO = "tripwire-gate-delivery:v1".b.freeze
+      GATE_DELIVERY_HKDF_INFO = "foil-gate-delivery:v1".b.freeze
       X25519_SPKI_PREFIX = ["302a300506032b656e032100"].pack("H*").freeze
 
       module_function
@@ -54,7 +54,7 @@ module Tripwire
         normalized = service_id.to_s.strip.gsub(/[^A-Za-z0-9]+/, "_").gsub(/^_+|_+$/, "").gsub(/_+/, "_").upcase
         raise ArgumentError, "service_id is required to derive a Gate agent token env key" if normalized.empty?
 
-        return "FOIL#{GATE_AGENT_TOKEN_ENV_SUFFIX}" if ["TRIPWIRE", "FOIL"].include?(normalized)
+        return "FOIL#{GATE_AGENT_TOKEN_ENV_SUFFIX}" if ["FOIL", "FOIL"].include?(normalized)
 
         "#{normalized}#{GATE_AGENT_TOKEN_ENV_SUFFIX}"
       end
@@ -231,11 +231,11 @@ module Tripwire
         raise ArgumentError, "gate_account_id is required" if candidate[:gate_account_id].to_s.empty?
         raise ArgumentError, "account_name is required" if candidate[:account_name].to_s.empty?
         raise ArgumentError, "metadata must be an object or null" unless candidate[:metadata].nil? || candidate[:metadata].is_a?(Hash)
-        raise ArgumentError, "tripwire must be an object" unless candidate[:tripwire].is_a?(Hash)
-        verdict = candidate[:tripwire][:verdict]
-        raise ArgumentError, "tripwire.verdict is invalid" unless %w[bot human inconclusive].include?(verdict)
-        score = candidate[:tripwire][:score]
-        raise ArgumentError, "tripwire.score must be a number or null" unless score.nil? || score.is_a?(Numeric)
+        raise ArgumentError, "foil must be an object" unless candidate[:foil].is_a?(Hash)
+        verdict = candidate[:foil][:verdict]
+        raise ArgumentError, "foil.verdict is invalid" unless %w[bot human inconclusive].include?(verdict)
+        score = candidate[:foil][:score]
+        raise ArgumentError, "foil.score must be a number or null" unless score.nil? || score.is_a?(Numeric)
 
         {
           service_id: candidate[:service_id],
@@ -243,7 +243,7 @@ module Tripwire
           gate_account_id: candidate[:gate_account_id],
           account_name: candidate[:account_name],
           metadata: candidate[:metadata]&.dup,
-          tripwire: {
+          foil: {
             verdict: verdict,
             score: score
           },
@@ -277,7 +277,7 @@ module Tripwire
 
       def verify_and_parse_webhook_event(secret:, timestamp:, raw_body:, signature:, max_age_seconds: 300, now_seconds: nil)
         unless verify_gate_webhook_signature(secret: secret, timestamp: timestamp, raw_body: raw_body, signature: signature, max_age_seconds: max_age_seconds, now_seconds: now_seconds)
-          raise ArgumentError, "Invalid Tripwire webhook signature"
+          raise ArgumentError, "Invalid Foil webhook signature"
         end
         parse_webhook_event(raw_body)
       end

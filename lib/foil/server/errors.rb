@@ -1,4 +1,4 @@
-module Tripwire
+module Foil
   module Server
     class ConfigurationError < StandardError; end
 

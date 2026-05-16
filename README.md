@@ -1,10 +1,10 @@
-# Tripwire Ruby Library
+# Foil Ruby Library
 
 ![Preview](https://img.shields.io/badge/status-preview-111827)
 ![Ruby 3.3+](https://img.shields.io/badge/ruby-3.3%2B-CC342D?logo=ruby&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-0f766e.svg)
 
-The Tripwire Ruby library provides convenient access to the Tripwire API from applications written in Ruby. It includes a client for Sessions, visitor fingerprints, Organizations, Organization API key management, sealed token verification, Gate, and Gate delivery/webhook helpers.
+The Foil Ruby library provides convenient access to the Foil API from applications written in Ruby. It includes a client for Sessions, visitor fingerprints, Organizations, Organization API key management, sealed token verification, Gate, and Gate delivery/webhook helpers.
 
 The library also provides:
 
@@ -17,14 +17,14 @@ The library also provides:
 
 ## Documentation
 
-See the [Tripwire docs](https://tripwirejs.com/docs) and [API reference](https://tripwirejs.com/docs/api-reference/introduction).
+See the [Foil docs](https://usefoil.com/docs) and [API reference](https://usefoil.com/docs/api-reference/introduction).
 
 ## Installation
 
 You don't need this source code unless you want to modify the gem. If you just want to use the package, run:
 
 ```bash
-bundle add tripwire-server
+bundle add foil-server
 ```
 
 ## Requirements
@@ -36,9 +36,9 @@ bundle add tripwire-server
 Use `FOIL_SECRET_KEY` or `secret_key:` for core detect APIs. For public or bearer-auth Gate flows, the client can also be created without a secret key:
 
 ```ruby
-require "tripwire/server"
+require "foil/server"
 
-client = Tripwire::Server::Client.new(secret_key: "sk_live_...")
+client = Foil::Server::Client.new(secret_key: "sk_live_...")
 
 page = client.sessions.list(verdict: "bot", limit: 25)
 session = client.sessions.get("sid_0123456789abcdefghjkmnpqrs")
@@ -49,7 +49,7 @@ puts "#{session[:decision][:automation_status]} #{session[:highlights].first&.fe
 ### Sealed token verification
 
 ```ruby
-result = Tripwire::Server.safe_verify_tripwire_token(sealed_token, "sk_live_...")
+result = Foil::Server.safe_verify_foil_token(sealed_token, "sk_live_...")
 
 if result[:ok]
   puts "#{result[:data][:decision][:verdict]} #{result[:data][:decision][:risk_score]}"
@@ -95,7 +95,7 @@ client.organizations.api_keys.revoke("org_0123456789abcdefghjkmnpqrs", created[:
 endpoint = client.webhooks.create_endpoint(
   "org_0123456789abcdefghjkmnpqrs",
   name: "Production alerts",
-  url: "https://example.com/tripwire/webhook",
+  url: "https://example.com/foil/webhook",
   event_types: ["session.result.persisted", "gate.session.approved"]
 )
 
@@ -111,11 +111,11 @@ puts events.items.first[:webhook_deliveries].first[:status]
 ### Gate APIs
 
 ```ruby
-delivery_key_pair = Tripwire::Server::GateDelivery.create_delivery_key_pair
+delivery_key_pair = Foil::Server::GateDelivery.create_delivery_key_pair
 
 services = client.gate.registry.list
 session = client.gate.sessions.create(
-  service_id: "tripwire",
+  service_id: "foil",
   account_name: "my-project",
   delivery: delivery_key_pair[:delivery]
 )
@@ -126,15 +126,15 @@ puts "#{services.first[:id]} #{session[:consent_url]}"
 ### Gate delivery and webhook helpers
 
 ```ruby
-key_pair = Tripwire::Server::GateDelivery.create_delivery_key_pair
-response = Tripwire::Server::GateDelivery.create_gate_approved_webhook_response(
+key_pair = Foil::Server::GateDelivery.create_delivery_key_pair
+response = Foil::Server::GateDelivery.create_gate_approved_webhook_response(
   delivery: key_pair[:delivery],
   outputs: {
     "FOIL_PUBLISHABLE_KEY" => "pk_live_...",
     "FOIL_SECRET_KEY" => "sk_live_..."
   }
 )
-payload = Tripwire::Server::GateDelivery.decrypt_gate_delivery_envelope(key_pair[:private_key], response[:encrypted_delivery])
+payload = Foil::Server::GateDelivery.decrypt_gate_delivery_envelope(key_pair[:private_key], response[:encrypted_delivery])
 
 puts payload[:outputs]["FOIL_SECRET_KEY"]
 ```
@@ -144,11 +144,11 @@ puts payload[:outputs]["FOIL_SECRET_KEY"]
 ```ruby
 begin
   client.sessions.list(limit: 999)
-rescue Tripwire::Server::ApiError => error
+rescue Foil::Server::ApiError => error
   warn "#{error.status} #{error.code} #{error.message}"
 end
 ```
 
 ## Support
 
-If you need help integrating Tripwire, start with [tripwirejs.com/docs](https://tripwirejs.com/docs).
+If you need help integrating Foil, start with [usefoil.com/docs](https://usefoil.com/docs).

@@ -1,11 +1,11 @@
 require "openssl"
 require "rubygems"
 
-module Tripwire
+module Foil
   module Server
     module CryptoSupport
       MIN_SUPPORTED_RUBY_VERSION = Gem::Version.new("3.3.0")
-      UNSUPPORTED_RUNTIME_MESSAGE = "Tripwire Ruby cryptography helpers require Ruby 3.3+ with modern OpenSSL support.".freeze
+      UNSUPPORTED_RUNTIME_MESSAGE = "Foil Ruby cryptography helpers require Ruby 3.3+ with modern OpenSSL support.".freeze
 
       module_function
 

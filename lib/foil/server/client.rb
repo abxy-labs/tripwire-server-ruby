@@ -3,12 +3,12 @@ require "json"
 require "net/http"
 require "uri"
 
-module Tripwire
+module Foil
   module Server
     class Client
-      DEFAULT_BASE_URL = "https://api.tripwirejs.com".freeze
+      DEFAULT_BASE_URL = "https://api.usefoil.com".freeze
       DEFAULT_TIMEOUT = 30
-      SDK_CLIENT_HEADER = "tripwire-server-ruby/0.1.0".freeze
+      SDK_CLIENT_HEADER = "foil-server-ruby/0.1.0".freeze
 
       attr_reader :sessions, :fingerprints, :organizations, :gate, :webhooks, :timeout
 
@@ -30,7 +30,7 @@ module Tripwire
         url = build_url(path, query)
         headers = {
           "Accept" => "application/json",
-          "X-Tripwire-Client" => SDK_CLIENT_HEADER
+          "X-Foil-Client" => SDK_CLIENT_HEADER
         }
         headers["User-Agent"] = @user_agent if @user_agent
         headers["Content-Type"] = "application/json" if body
@@ -133,11 +133,11 @@ module Tripwire
           headers
         when :bearer
           token = auth[:token]
-          raise ConfigurationError, "Missing bearer token for this Tripwire request." if token.nil? || token.empty?
+          raise ConfigurationError, "Missing bearer token for this Foil request." if token.nil? || token.empty?
 
           headers["Authorization"] = "Bearer #{token}"
         else
-          raise ConfigurationError, "Missing Tripwire secret key. Pass secret_key explicitly or set FOIL_SECRET_KEY." if @secret_key.nil? || @secret_key.empty?
+          raise ConfigurationError, "Missing Foil secret key. Pass secret_key explicitly or set FOIL_SECRET_KEY." if @secret_key.nil? || @secret_key.empty?
 
           headers["Authorization"] = "Bearer #{@secret_key}"
         end
