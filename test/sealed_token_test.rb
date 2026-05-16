@@ -30,12 +30,12 @@ class SealedTokenTest < Minitest::Test
 
   def test_verify_tripwire_token_requires_secret
     fixture = load_fixture("sealed-token/vector.v1.json")
-    original = ENV.delete("TRIPWIRE_SECRET_KEY")
+    original = ENV.delete("FOIL_SECRET_KEY")
 
     assert_raises(Tripwire::Server::ConfigurationError) do
       Tripwire::Server.verify_tripwire_token(fixture.fetch(:token))
     end
   ensure
-    ENV["TRIPWIRE_SECRET_KEY"] = original if original
+    ENV["FOIL_SECRET_KEY"] = original if original
   end
 end

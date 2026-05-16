@@ -2,8 +2,8 @@ require_relative "test_helper"
 
 class ClientTest < Minitest::Test
   def test_env_secret_fallback
-    original = ENV["TRIPWIRE_SECRET_KEY"]
-    ENV["TRIPWIRE_SECRET_KEY"] = "sk_env_default"
+    original = ENV["FOIL_SECRET_KEY"]
+    ENV["FOIL_SECRET_KEY"] = "sk_env_default"
     fixture = load_fixture("api/sessions/list.json")
 
     client = Tripwire::Server::Client.new(
@@ -15,19 +15,19 @@ class ClientTest < Minitest::Test
 
     assert_equal 1, client.sessions.list.items.length
   ensure
-    ENV["TRIPWIRE_SECRET_KEY"] = original
+    ENV["FOIL_SECRET_KEY"] = original
   end
 
   def test_missing_secret_raises
-    original = ENV.delete("TRIPWIRE_SECRET_KEY")
+    original = ENV.delete("FOIL_SECRET_KEY")
     client = Tripwire::Server::Client.new
     assert_respond_to client, :gate
   ensure
-    ENV["TRIPWIRE_SECRET_KEY"] = original if original
+    ENV["FOIL_SECRET_KEY"] = original if original
   end
 
   def test_secret_endpoints_raise_at_request_time_without_secret
-    original = ENV.delete("TRIPWIRE_SECRET_KEY")
+    original = ENV.delete("FOIL_SECRET_KEY")
     client = Tripwire::Server::Client.new(
       transport: lambda do |_request|
         [200, { "content-type" => "application/json" }, JSON.dump({})]
@@ -38,7 +38,7 @@ class ClientTest < Minitest::Test
       client.sessions.list
     end
   ensure
-    ENV["TRIPWIRE_SECRET_KEY"] = original if original
+    ENV["FOIL_SECRET_KEY"] = original if original
   end
 
   def test_base_url_timeout_and_headers_are_applied

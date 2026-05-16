@@ -12,7 +12,7 @@ module Tripwire
 
       attr_reader :sessions, :fingerprints, :organizations, :gate, :webhooks, :timeout
 
-      def initialize(secret_key: ENV["TRIPWIRE_SECRET_KEY"], base_url: DEFAULT_BASE_URL, timeout: DEFAULT_TIMEOUT, user_agent: nil, transport: nil)
+      def initialize(secret_key: ENV["FOIL_SECRET_KEY"], base_url: DEFAULT_BASE_URL, timeout: DEFAULT_TIMEOUT, user_agent: nil, transport: nil)
         @secret_key = secret_key
         @base_url = base_url
         @timeout = timeout
@@ -137,7 +137,7 @@ module Tripwire
 
           headers["Authorization"] = "Bearer #{token}"
         else
-          raise ConfigurationError, "Missing Tripwire secret key. Pass secret_key explicitly or set TRIPWIRE_SECRET_KEY." if @secret_key.nil? || @secret_key.empty?
+          raise ConfigurationError, "Missing Tripwire secret key. Pass secret_key explicitly or set FOIL_SECRET_KEY." if @secret_key.nil? || @secret_key.empty?
 
           headers["Authorization"] = "Bearer #{@secret_key}"
         end

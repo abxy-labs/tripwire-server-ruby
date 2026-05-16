@@ -54,11 +54,13 @@ module Tripwire
         normalized = service_id.to_s.strip.gsub(/[^A-Za-z0-9]+/, "_").gsub(/^_+|_+$/, "").gsub(/_+/, "_").upcase
         raise ArgumentError, "service_id is required to derive a Gate agent token env key" if normalized.empty?
 
+        return "FOIL#{GATE_AGENT_TOKEN_ENV_SUFFIX}" if ["TRIPWIRE", "FOIL"].include?(normalized)
+
         "#{normalized}#{GATE_AGENT_TOKEN_ENV_SUFFIX}"
       end
 
       def is_gate_managed_env_var_key(key)
-        key == "TRIPWIRE_AGENT_TOKEN" || key.to_s.end_with?(GATE_AGENT_TOKEN_ENV_SUFFIX)
+        key == "FOIL_AGENT_TOKEN" || key.to_s.end_with?(GATE_AGENT_TOKEN_ENV_SUFFIX)
       end
 
       def is_blocked_gate_env_var_key(key)

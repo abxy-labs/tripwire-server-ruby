@@ -2,13 +2,13 @@ require_relative "test_helper"
 
 class LiveTest < Minitest::Test
   def test_public_server_surface
-    skip "Set TRIPWIRE_LIVE_SMOKE=1 to run live smoke tests." unless ENV["TRIPWIRE_LIVE_SMOKE"] == "1"
+    skip "Set FOIL_LIVE_SMOKE=1 to run live smoke tests." unless ENV["FOIL_LIVE_SMOKE"] == "1"
 
     client = Tripwire::Server::Client.new(
-      secret_key: require_env("TRIPWIRE_SMOKE_SECRET_KEY"),
-      base_url: ENV.fetch("TRIPWIRE_SMOKE_BASE_URL", "https://api.tripwirejs.com")
+      secret_key: require_env("FOIL_SMOKE_SECRET_KEY"),
+      base_url: ENV.fetch("FOIL_SMOKE_BASE_URL", "https://api.tripwirejs.com")
     )
-    organization_id = require_env("TRIPWIRE_SMOKE_ORGANIZATION_ID")
+    organization_id = require_env("FOIL_SMOKE_ORGANIZATION_ID")
 
     created_key_id = nil
     rotated_key_id = nil

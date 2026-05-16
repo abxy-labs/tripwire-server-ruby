@@ -92,15 +92,15 @@ class GateDeliveryTest < Minitest::Test
     response = Tripwire::Server::GateDelivery.create_gate_approved_webhook_response(
       delivery: key_pair[:delivery],
       outputs: {
-        "TRIPWIRE_PUBLISHABLE_KEY" => "pk_live_bundle",
-        "TRIPWIRE_SECRET_KEY" => "sk_live_bundle"
+        "FOIL_PUBLISHABLE_KEY" => "pk_live_bundle",
+        "FOIL_SECRET_KEY" => "sk_live_bundle"
       }
     )
     decrypted = Tripwire::Server::GateDelivery.decrypt_gate_delivery_envelope(key_pair[:private_key], response[:encrypted_delivery])
     assert_equal(
       {
-        "TRIPWIRE_PUBLISHABLE_KEY" => "pk_live_bundle",
-        "TRIPWIRE_SECRET_KEY" => "sk_live_bundle"
+        "FOIL_PUBLISHABLE_KEY" => "pk_live_bundle",
+        "FOIL_SECRET_KEY" => "sk_live_bundle"
       },
       decrypted[:outputs].transform_keys(&:to_s)
     )
