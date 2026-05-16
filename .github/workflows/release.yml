@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm_version:
-        description: Version in lib/tripwire/server/version.rb to release
+        description: Version in lib/foil/server/version.rb to release
         required: true
         type: string
       dry_run:
@@ -39,7 +39,7 @@ jobs:
 
       - id: version
         run: |
-          VERSION=$(ruby -e 'require_relative "./lib/tripwire/server/version"; print Tripwire::Server::VERSION')
+          VERSION=$(ruby -e 'require_relative "./lib/foil/server/version"; print Foil::Server::VERSION')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
@@ -75,8 +75,8 @@ jobs:
       - name: Build release artifact
         run: |
           mkdir -p artifacts
-          gem build tripwire-server.gemspec
-          mv tripwire-server-*.gem artifacts/
+          gem build foil-server.gemspec
+          mv foil-server-*.gem artifacts/
 
       - uses: actions/upload-artifact@v7
         with:

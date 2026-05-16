@@ -99,7 +99,7 @@ class ContractTest < Minitest::Test
     assert_equal({ "$ref" => "#/components/schemas/SessionId" }, strip_examples(schemas.fetch("SessionSummary").fetch("properties").fetch("id")))
     assert_equal({ "$ref" => "#/components/schemas/OrganizationStatus" }, strip_examples(schemas.fetch("Organization").fetch("properties").fetch("status")))
     assert_equal({ "$ref" => "#/components/schemas/ApiKeyStatus" }, strip_examples(schemas.fetch("ApiKey").fetch("properties").fetch("status")))
-    assert_equal "#/components/schemas/KnownPublicErrorCode", schemas.fetch("PublicError").fetch("properties").fetch("code").fetch("x-tripwire-known-values-ref")
+    assert_equal "#/components/schemas/KnownPublicErrorCode", schemas.fetch("PublicError").fetch("properties").fetch("code").fetch("x-foil-known-values-ref")
     assert_equal ["active", "suspended", "deleted"], schemas.fetch("OrganizationStatus").fetch("enum")
     assert_equal ["active", "rotating", "revoked"], schemas.fetch("ApiKeyStatus").fetch("enum")
     %w[decision highlights attribution web_bot_auth network runtime_integrity visitor_fingerprint connection_fingerprint previous_decisions request browser device analysis_coverage signals_fired client_telemetry].each do |field|

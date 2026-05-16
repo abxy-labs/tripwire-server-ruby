@@ -2,13 +2,13 @@ require_relative "test_helper"
 
 class LiveTest < Minitest::Test
   def test_public_server_surface
-    skip "Set TRIPWIRE_LIVE_SMOKE=1 to run live smoke tests." unless ENV["TRIPWIRE_LIVE_SMOKE"] == "1"
+    skip "Set FOIL_LIVE_SMOKE=1 to run live smoke tests." unless ENV["FOIL_LIVE_SMOKE"] == "1"
 
-    client = Tripwire::Server::Client.new(
-      secret_key: require_env("TRIPWIRE_SMOKE_SECRET_KEY"),
-      base_url: ENV.fetch("TRIPWIRE_SMOKE_BASE_URL", "https://api.tripwirejs.com")
+    client = Foil::Server::Client.new(
+      secret_key: require_env("FOIL_SMOKE_SECRET_KEY"),
+      base_url: ENV.fetch("FOIL_SMOKE_BASE_URL", "https://api.usefoil.com")
     )
-    organization_id = require_env("TRIPWIRE_SMOKE_ORGANIZATION_ID")
+    organization_id = require_env("FOIL_SMOKE_ORGANIZATION_ID")
 
     created_key_id = nil
     rotated_key_id = nil
@@ -46,7 +46,7 @@ class LiveTest < Minitest::Test
       assert_operator rotated_key.fetch(:revealed_key), :start_with?, "sk_"
 
       fixture = load_fixture("sealed-token/vector.v1.json")
-      verified = Tripwire::Server.safe_verify_tripwire_token(fixture.fetch(:token), fixture.fetch(:secretKey))
+      verified = Foil::Server.safe_verify_foil_token(fixture.fetch(:token), fixture.fetch(:secretKey))
       assert_equal true, verified.fetch(:ok)
       assert_equal fixture.fetch(:payload).fetch(:session_id), verified.fetch(:data).fetch(:session_id)
       assert_equal fixture.fetch(:payload).fetch(:decision).fetch(:event_id), verified.fetch(:data).fetch(:decision).fetch(:event_id)
@@ -81,7 +81,7 @@ class LiveTest < Minitest::Test
     return unless key_id
 
     client.organizations.api_keys.revoke(organization_id, key_id)
-  rescue Tripwire::Server::ApiError => error
+  rescue Foil::Server::ApiError => error
     raise unless error.status == 404 || error.code == "request.not_found"
   end
 end

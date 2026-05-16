@@ -4,23 +4,23 @@ require "json"
 require "openssl"
 require "zlib"
 
-module Tripwire
+module Foil
   module Server
     module SealedToken
       VERSION = 0x01
 
       module_function
 
-      def verify_tripwire_token(sealed_token, secret_key = nil)
+      def verify_foil_token(sealed_token, secret_key = nil)
         CryptoSupport.ensure_supported_runtime!
-        resolved_secret = secret_key || ENV["TRIPWIRE_SECRET_KEY"]
-        raise ConfigurationError, "Missing Tripwire secret key. Pass secret_key explicitly or set TRIPWIRE_SECRET_KEY." if resolved_secret.nil? || resolved_secret.empty?
+        resolved_secret = secret_key || ENV["FOIL_SECRET_KEY"]
+        raise ConfigurationError, "Missing Foil secret key. Pass secret_key explicitly or set FOIL_SECRET_KEY." if resolved_secret.nil? || resolved_secret.empty?
 
         raw = Base64.decode64(sealed_token)
-        raise TokenVerificationError, "Tripwire token is too short." if raw.bytesize < 29
+        raise TokenVerificationError, "Foil token is too short." if raw.bytesize < 29
 
         version = raw.getbyte(0)
-        raise TokenVerificationError, "Unsupported Tripwire token version: #{version}" if version != VERSION
+        raise TokenVerificationError, "Unsupported Foil token version: #{version}" if version != VERSION
 
         nonce = raw.byteslice(1, 12)
         ciphertext = raw.byteslice(13, raw.bytesize - 29)
@@ -39,11 +39,11 @@ module Tripwire
       rescue ConfigurationError, TokenVerificationError
         raise
       rescue StandardError => error
-        raise TokenVerificationError, "Failed to verify Tripwire token: #{error.message}"
+        raise TokenVerificationError, "Failed to verify Foil token: #{error.message}"
       end
 
-      def safe_verify_tripwire_token(sealed_token, secret_key = nil)
-        { ok: true, data: verify_tripwire_token(sealed_token, secret_key) }
+      def safe_verify_foil_token(sealed_token, secret_key = nil)
+        { ok: true, data: verify_foil_token(sealed_token, secret_key) }
       rescue ConfigurationError, TokenVerificationError => error
         { ok: false, error: error }
       end

@@ -2,7 +2,7 @@ require "json"
 require "rubygems"
 require "pathname"
 require "minitest/autorun"
-require "tripwire/server"
+require "foil/server"
 
 module FixtureHelper
   ROOT = Pathname.new(__dir__).join("..").expand_path
@@ -16,8 +16,8 @@ class Minitest::Test
   include FixtureHelper
 
   def require_gate_crypto_support!
-    return if Tripwire::Server::CryptoSupport.supported_runtime?
+    return if Foil::Server::CryptoSupport.supported_runtime?
 
-    skip(Tripwire::Server::CryptoSupport.unsupported_runtime_message)
+    skip(Foil::Server::CryptoSupport.unsupported_runtime_message)
   end
 end

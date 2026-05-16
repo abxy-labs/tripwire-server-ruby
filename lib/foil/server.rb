@@ -6,16 +6,16 @@ require_relative "server/sealed_token"
 require_relative "server/gate_delivery"
 require_relative "server/client"
 
-module Tripwire
+module Foil
   module Server
     module_function
 
-    def verify_tripwire_token(sealed_token, secret_key = nil)
-      SealedToken.verify_tripwire_token(sealed_token, secret_key)
+    def verify_foil_token(sealed_token, secret_key = nil)
+      SealedToken.verify_foil_token(sealed_token, secret_key)
     end
 
-    def safe_verify_tripwire_token(sealed_token, secret_key = nil)
-      SealedToken.safe_verify_tripwire_token(sealed_token, secret_key)
+    def safe_verify_foil_token(sealed_token, secret_key = nil)
+      SealedToken.safe_verify_foil_token(sealed_token, secret_key)
     end
 
     def method_missing(name, *args, **kwargs, &block)
